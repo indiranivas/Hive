@@ -1,0 +1,26 @@
+# Core runtime. Everything Phase 1 needs to run the API, workers and CLI.
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pydantic>=2.8
+pydantic-settings>=2.4
+SQLAlchemy>=2.0.30
+alembic>=1.13
+psycopg[binary]>=3.2
+celery>=5.4
+redis>=5.0
+httpx>=0.27
+
+# Orchestration runtime for the graded-retrieval and KR-routing graphs. Used as a
+# state machine only -- Hive keeps its own LLM/embedding providers, so no
+# LangChain model abstraction is introduced. Without it both graphs fall back to
+# an equivalent plain loop.
+langgraph>=1.2
+
+# Optional providers, safe to keep installed (lazy-imported):
+#   AUTH_MODE=azure_ad          -> pyjwt[crypto]
+#   AZURE_OPENAI_AUTH=entra     -> azure-identity
+#   LLM_PROVIDER=anthropic      -> anthropic
+# Azure OpenAI itself needs no SDK: it is called over plain HTTPS via httpx.
+pyjwt[crypto]>=2.9
+azure-identity>=1.17
+anthropic>=0.40

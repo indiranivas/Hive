@@ -1,0 +1,26 @@
+.env
+.env.local
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+.venv/
+venv/
+
+# Local database, embeddings and Chroma files
+backend/.data/
+*.db
+*.sqlite3
+
+node_modules/
+.next/
+dist/
+build/
+
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

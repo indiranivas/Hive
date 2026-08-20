@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hive — ShiftSpark 2026 · Reimagine Track</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0}
+:root{
+  --bg:#0A0E1A;
+  --surface:#111827;
+  --card:#1A2236;
+  --border:rgba(255,255,255,.08);
+  --text:#CBD5E8;
+  --bright:#F0F4FF;
+  --honey:#F59E0B;
+  --honey-soft:rgba(245,158,11,.12);
+  --amber:#FBBF24;
+  --comb:#D97706;
+  --lavender:#A78BFA;
+  --mint:#34D399;
+  --sky:#38BDF8;
+  --rose:#FB7185;
+  --sans:"DM Sans",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased}
+
+/* ---- glow ---- */
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(900px 500px at 60% -6%, rgba(245,158,11,.10), transparent 68%),
+    radial-gradient(600px 400px at 10% 14%, rgba(167,139,250,.08), transparent 70%);
+}
+
+.wrap{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:0 28px}
+section{padding:88px 0;border-top:1px solid var(--border)}
+section:first-of-type{border:0}
+
+/* ---- typography ---- */
+.tag{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--honey);display:inline-flex;align-items:center;gap:8px;margin:0 0 18px;
+}
+.tag::before{content:"";width:18px;height:1px;background:var(--honey);flex:none}
+h1{
+  font-family:var(--sans);font-weight:700;font-size:clamp(52px,8vw,96px);
+  line-height:.92;letter-spacing:-.045em;color:var(--bright);margin:0 0 20px;
+}
+h1 .hex{
+  display:inline-block;position:relative;color:var(--honey);
+}
+h1 .hex::after{
+  content:"";position:absolute;left:-6px;right:-6px;bottom:2px;height:8px;
+  background:var(--honey-soft);border-radius:2px;z-index:-1;
+}
+h2{
+  font-family:var(--sans);font-weight:600;font-size:clamp(24px,3.4vw,36px);
+  line-height:1.15;letter-spacing:-.025em;color:var(--bright);margin:0 0 18px;
+}
+h3{font-weight:600;font-size:18px;color:var(--bright);margin:0 0 8px}
+p{margin:0 0 18px;max-width:62ch}
+p.lead{font-size:20px;line-height:1.55;color:var(--bright)}
+strong{color:var(--bright);font-weight:600}
+
+/* ---- hero ---- */
+.hero{padding-top:15vh;padding-bottom:60px}
+.oneliner{
+  font-size:clamp(18px,2.6vw,26px);font-weight:500;line-height:1.4;
+  color:var(--bright);margin:0 0 36px;max-width:28ch;
+  border-left:2px solid var(--honey);padding-left:18px;
+}
+.meta-row{
+  display:flex;flex-wrap:wrap;gap:0;border:1px solid var(--border);border-radius:4px;overflow:hidden;margin:38px 0 0;
+}
+.meta-row div{padding:14px 20px;border-right:1px solid var(--border);flex:1 1 160px}
+.meta-row div:last-child{border-right:0}
+.meta-row dt{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.40);margin:0 0 4px}
+.meta-row dd{font-size:14.5px;font-weight:500;color:var(--bright)}
+
+/* ---- streams diagram ---- */
+.streams{display:grid;grid-template-columns:1fr auto 1fr;gap:0;align-items:center;margin:0 0 36px}
+.stream-col{display:flex;flex-direction:column;gap:1px}
+.stream{
+  display:flex;align-items:center;gap:12px;padding:16px 18px;
+  background:var(--card);border:1px solid var(--border);
+}
+.stream-col:first-child .stream{border-radius:4px 0 0 4px;flex-direction:row}
+.stream-col:last-child .stream{border-radius:0 4px 4px 0;flex-direction:row-reverse;text-align:right}
+.stream .ico{
+  width:38px;height:38px;border-radius:50%;flex:none;
+  display:grid;place-items:center;font-size:16px;
+}
+.stream .ico.email{background:rgba(56,189,248,.12);color:var(--sky)}
+.stream .ico.call{background:rgba(251,113,133,.12);color:var(--rose)}
+.stream .ico.task{background:rgba(167,139,250,.12);color:var(--lavender)}
+.stream .ico.git{background:rgba(52,211,153,.12);color:var(--mint)}
+.stream .label{font-size:13.5px;font-weight:500;color:var(--bright)}
+.stream .sub{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.40);margin-top:2px}
+
+.hive-core{
+  width:100px;height:100px;flex:none;
+  background:var(--honey-soft);border:2px solid var(--honey);border-radius:50%;
+  display:grid;place-items:center;
+  font-family:var(--sans);font-weight:700;font-size:22px;letter-spacing:-.02em;color:var(--honey);
+  box-shadow:0 0 0 12px rgba(245,158,11,.06),0 0 0 28px rgba(245,158,11,.03);
+  position:relative;z-index:2;
+}
+.flow-arrows{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  padding:0 6px;position:relative;
+}
+.flow-arrows::before{
+  content:"";position:absolute;top:10%;bottom:10%;width:1px;
+  background:linear-gradient(180deg,transparent,var(--honey),transparent);
+}
+.flow-arrows.right::before{background:linear-gradient(180deg,transparent,var(--lavender),transparent)}
+
+/* ---- knowledge layers ---- */
+.layers{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin:0 0 32px}
+.layer{background:var(--surface);padding:32px 28px}
+.layer .badge{
+  display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  padding:4px 10px;border-radius:2px;margin:0 0 14px;
+}
+.layer.team .badge{background:rgba(56,189,248,.12);color:var(--sky)}
+.layer.org .badge{background:rgba(167,139,250,.12);color:var(--lavender)}
+.layer ul{padding:0 0 0 18px;margin:0;font-size:14.5px;color:var(--text)}
+.layer li{margin:0 0 8px}
+
+/* ---- dashboard mock ---- */
+.dash{
+  background:var(--surface);border:1px solid var(--border);border-radius:6px;
+  overflow:hidden;margin:0 0 32px;
+}
+.dash-bar{
+  display:flex;align-items:center;gap:10px;padding:10px 16px;
+  border-bottom:1px solid var(--border);background:rgba(255,255,255,.02);
+}
+.dot{width:8px;height:8px;border-radius:50%}
+.dot.r{background:#EF4444}.dot.y{background:#F59E0B}.dot.g{background:#22C55E}
+.dash-bar span{font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.35);margin-left:8px}
+.dash-body{padding:24px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.dash-card{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:18px 16px}
+.dash-card.full{grid-column:1/-1}
+.dash-card h4{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.40);margin:0 0 12px;font-weight:400}
+.dash-card .row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:13.5px}
+.dash-card .row:last-child{border:0}
+.dash-card .row .name{color:var(--bright);font-weight:500}
+.dash-card .row .val{font-family:var(--mono);font-size:12px}
+.dash-card .row .val.up{color:var(--mint)}
+.dash-card .row .val.warn{color:var(--amber)}
+.dash-card .row .val.cool{color:var(--sky)}
+.dash-card .big{font-size:clamp(32px,4vw,48px);font-weight:700;color:var(--bright);line-height:1;margin:0 0 4px}
+.dash-card .big small{font-size:14px;font-weight:400;color:rgba(255,255,255,.40);margin-left:6px}
+.dash-card .note{font-size:12px;color:rgba(255,255,255,.40)}
+.bar-row{display:flex;align-items:center;gap:10px;padding:6px 0}
+.bar-row .lbl{width:60px;font-size:12px;color:rgba(255,255,255,.50);flex:none;text-align:right}
+.bar-row .track{flex:1;height:10px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
+.bar-row .fill-bar{height:100%;border-radius:2px}
+
+/* ---- scenarios ---- */
+.scenario{
+  border:1px solid var(--border);border-radius:4px;padding:24px;margin:0 0 12px;
+  background:var(--surface);
+}
+.scenario .q{font-weight:600;color:var(--bright);font-size:15px;margin:0 0 10px}
+.scenario .q::before{content:"→ ";color:var(--honey)}
+.scenario .a{font-size:14.5px;color:var(--text);margin:0;padding-left:20px;border-left:2px solid var(--border)}
+
+/* ---- privacy ---- */
+.guardrails{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin:0 0 24px}
+.guardrail{background:var(--surface);padding:22px 20px}
+.guardrail h3{font-size:14.5px;margin:0 0 6px}
+.guardrail p{font-size:13.5px;margin:0;color:rgba(255,255,255,.55)}
+
+/* ---- close ---- */
+.close-box{
+  border:1px solid var(--border);border-left:3px solid var(--honey);
+  border-radius:4px;padding:28px 26px;background:rgba(245,158,11,.03);
+}
+.close-box p:last-child{margin:0}
+
+/* ---- reveal ---- */
+.reveal{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease}
+.reveal.in{opacity:1;transform:none}
+
+/* ---- responsive ---- */
+@media(max-width:720px){
+  section{padding:56px 0}
+  .hero{padding-top:12vh}
+  .streams{grid-template-columns:1fr;gap:12px}
+  .flow-arrows{display:none}
+  .hive-core{margin:0 auto}
+  .layers{grid-template-columns:1fr}
+  .dash-body{grid-template-columns:1fr}
+  .stream-col:first-child .stream,
+  .stream-col:last-child .stream{border-radius:4px;flex-direction:row;text-align:left}
+}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .reveal{opacity:1;transform:none;transition:none}
+}
+:focus-visible{outline:2px solid var(--honey);outline-offset:3px;border-radius:2px}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- ====== HERO ====== -->
+  <section class="hero">
+    <p class="tag">ShiftSpark 2026 · Track 1 — Reimagine</p>
+    <h1><span class="hex">Hive</span></h1>
+    <p class="oneliner">CC it on every email. Let it into every call. Give it read access to every board and every repo. Then ask it anything about your team.</p>
+    <p class="lead">Hive is an always-listening AI agent that absorbs a team's entire work trail — email threads, call transcripts, backlog items, Git commits — and builds a live, queryable knowledge layer for the team and the organisation. The manager sees one dashboard instead of five tools. Anyone on the team can ask "who knows this?" and get a sourced answer.</p>
+    <dl class="meta-row">
+      <div><dt>Submitted by</dt><dd>Nivas</dd></div>
+      <div><dt>Track</dt><dd>Reimagine</dd></div>
+      <div><dt>Concept</dt><dd>Passive AI agent</dd></div>
+      <div><dt>Build needed</dt><dd>Integration layer</dd></div>
+    </dl>
+  </section>
+
+  <!-- ====== PROBLEM ====== -->
+  <section class="reveal">
+    <p class="tag">The problem</p>
+    <h2>Your team's knowledge lives in five tools. Nobody searches all five.</h2>
+    <p>A manager at LevelShift runs their team across Outlook, Teams, Azure DevOps, Git, and whatever doc store the project uses. Each one holds a piece of reality. But nobody has the time to pull all five into a single picture — so decisions get made on partial data, questions go to the wrong person, and status reports get written by hand from memory instead of from evidence.</p>
+    <p>The information exists. It's just scattered across tools and trapped in people's heads. Hive's job is simple: <strong>absorb everything, forget nothing, and answer when asked.</strong></p>
+  </section>
+
+  <!-- ====== HOW IT WORKS ====== -->
+  <section class="reveal">
+    <p class="tag">How it works</p>
+    <h2>Four streams in. Two knowledge layers out.</h2>
+    <p style="margin-bottom:36px">Hive doesn't replace any tool. It's CC'd, connected, and read-only — it just listens.</p>
+
+    <div class="streams">
+      <div class="stream-col">
+        <div class="stream"><div class="ico email">✉</div><div><div class="label">Email</div><div class="sub">CC'd on every team thread</div></div></div>
+        <div class="stream"><div class="ico call">☎</div><div><div class="label">Calls</div><div class="sub">Transcribes every meeting</div></div></div>
+        <div class="stream"><div class="ico task">☑</div><div><div class="label">Tasks &amp; Backlog</div><div class="sub">Azure DevOps / project boards</div></div></div>
+        <div class="stream"><div class="ico git">⌥</div><div><div class="label">Git</div><div class="sub">Every commit, PR, review</div></div></div>
+      </div>
+      <div class="flow-arrows">
+        <span style="color:var(--honey);font-size:14px">→</span>
+        <span style="color:var(--honey);font-size:14px">→</span>
+        <span style="color:var(--honey);font-size:14px">→</span>
+        <span style="color:var(--honey);font-size:14px">→</span>
+      </div>
+      <div class="hive-core">Hive</div>
+      <div class="flow-arrows right">
+        <span style="color:var(--lavender);font-size:14px">→</span>
+        <span style="color:var(--lavender);font-size:14px">→</span>
+      </div>
+      <div class="stream-col">
+        <div class="stream"><div class="ico task" style="background:rgba(56,189,248,.12)"><span style="color:var(--sky)">◈</span></div><div><div class="label">Team Knowledge</div><div class="sub">What your team knows &amp; does</div></div></div>
+        <div class="stream"><div class="ico task" style="background:rgba(167,139,250,.12)"><span style="color:var(--lavender)">◈</span></div><div><div class="label">Org Knowledge</div><div class="sub">Cross-team expertise map</div></div></div>
+      </div>
+    </div>
+
+    <div class="layers">
+      <div class="layer team">
+        <div class="badge">Team knowledge</div>
+        <h3>What the manager sees</h3>
+        <ul>
+          <li>Who's working on what right now — sourced from commits and tickets, not standups</li>
+          <li>Auto-generated weekly status per person — accurate, evidenced, zero effort from the engineer</li>
+          <li>Blockers surfaced before someone has to escalate them</li>
+          <li>Project health — velocity, silent tickets, work-in-progress pileups</li>
+        </ul>
+      </div>
+      <div class="layer org">
+        <div class="badge">Org knowledge</div>
+        <h3>What the whole company gets</h3>
+        <ul>
+          <li>"Who at LevelShift has done Salesforce CPQ integration?" — names with proof</li>
+          <li>Expertise map built from actual work, not self-reported skill tags</li>
+          <li>Cross-team knowledge transfer: if Team A solved a problem, Team B finds it before re-solving it</li>
+          <li>Onboarding accelerator — new hires query the org brain instead of interrupting people</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== MANAGER DASHBOARD ====== -->
+  <section class="reveal">
+    <p class="tag">The manager's view</p>
+    <h2>One screen instead of five tabs.</h2>
+    <p style="margin-bottom:28px">A manager opens Hive once a day. Everything they used to chase across Outlook, DevOps, and standups is already here — assembled passively, sourced to the original artifact.</p>
+
+    <div class="dash">
+      <div class="dash-bar">
+        <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+        <span>Hive · Team: Platform Engineering · Week 33</span>
+      </div>
+      <div class="dash-body">
+        <div class="dash-card">
+          <h4>Team pulse</h4>
+          <div class="big">87%<small>tasks on track</small></div>
+          <div class="note">3 items flagged — 2 blocked, 1 stale (no update in 5 days)</div>
+        </div>
+        <div class="dash-card">
+          <h4>Activity this week</h4>
+          <div class="bar-row"><span class="lbl">Commits</span><div class="track"><div class="fill-bar" style="width:72%;background:var(--mint)"></div></div></div>
+          <div class="bar-row"><span class="lbl">PRs</span><div class="track"><div class="fill-bar" style="width:48%;background:var(--sky)"></div></div></div>
+          <div class="bar-row"><span class="lbl">Tickets</span><div class="track"><div class="fill-bar" style="width:85%;background:var(--lavender)"></div></div></div>
+          <div class="bar-row"><span class="lbl">Emails</span><div class="track"><div class="fill-bar" style="width:60%;background:var(--amber)"></div></div></div>
+        </div>
+        <div class="dash-card full">
+          <h4>Auto-generated status — this week</h4>
+          <div class="row"><span class="name">Arjun M.</span><span class="val up">12 commits · closed AUTH-417, AUTH-420 · PR merged for token refresh</span></div>
+          <div class="row"><span class="name">Priya S.</span><span class="val cool">6 commits · API spec review in progress · meeting with QA re: edge cases</span></div>
+          <div class="row"><span class="name">Rahul K.</span><span class="val warn">2 commits · DEVOPS-312 blocked 4 days · flagged by Hive Tuesday</span></div>
+          <div class="row"><span class="name">Deepa V.</span><span class="val up">9 commits · dashboard feature shipped · started documentation sprint</span></div>
+        </div>
+      </div>
+    </div>
+    <p>Every line is sourced. Click any name and Hive shows the commits, tickets, email threads, and call excerpts that compose the status. Nothing is invented. Nothing is estimated. The engineer never had to write a word.</p>
+  </section>
+
+  <!-- ====== ASK HIVE ====== -->
+  <section class="reveal">
+    <p class="tag">Ask Hive anything</p>
+    <h2>Natural language queries against the team's entire work trail.</h2>
+    <p style="margin-bottom:28px">These are real questions managers and teammates ask every week. Right now they require digging through multiple tools or asking around on Teams. With Hive, it's one question and a sourced answer.</p>
+
+    <div class="scenario">
+      <p class="q">Who on the team has experience with the Salesforce REST API?</p>
+      <p class="a">Nivas — authored 23 commits touching Salesforce API endpoints in the last 60 days, including token handling and PATCH operations against Agentforce_Training_Insight__c. Also discussed Salesforce auth flow in a call with the integration team on Aug 5.</p>
+    </div>
+    <div class="scenario">
+      <p class="q">What's blocking the auth service release?</p>
+      <p class="a">DEVOPS-312 has been in "In Progress" with no commits for 4 days. Rahul mentioned a dependency on the QA environment in Tuesday's standup. Priya's email to infra on Aug 12 requested an environment refresh — no reply yet.</p>
+    </div>
+    <div class="scenario">
+      <p class="q">Give me this week's status for the team. I have a leadership sync in 10 minutes.</p>
+      <p class="a">Platform Engineering, Week 33: Auth token refresh merged and deployed (Arjun). Dashboard feature shipped to staging (Deepa). API spec review 80% — awaiting QA sign-off (Priya). One blocker: auth service release held on environment access (Rahul, 4 days). Overall: 87% on track, 1 at-risk item.</p>
+    </div>
+    <div class="scenario">
+      <p class="q">Has anyone at the company solved multi-tenant rate limiting before?</p>
+      <p class="a">Team B (Data Platform) implemented tenant-scoped rate limiting in March — see PR #478 and the design doc linked in PLAT-209. Contact: Vikram J., who authored the implementation.</p>
+    </div>
+  </section>
+
+  <!-- ====== WHY THIS WINS ====== -->
+  <section class="reveal">
+    <p class="tag">Why this is different</p>
+    <h2>Most AI pitches add a tool. Hive replaces the act of looking.</h2>
+    <p>There is no shortage of dashboards. The problem isn't display — it's collection. A manager shouldn't have to pull information out of four systems to answer "how's the team doing." Hive inverts the flow: information comes to the manager, assembled and sourced, without anyone doing the assembling.</p>
+    <p>Three properties make it work:</p>
+
+    <div class="guardrails" style="margin-top:22px">
+      <div class="guardrail">
+        <h3>Passive</h3>
+        <p>Nobody changes their workflow. Hive absorbs the existing trail — CC on emails, webhooks on DevOps, read access on repos. Zero adoption friction.</p>
+      </div>
+      <div class="guardrail">
+        <h3>Sourced</h3>
+        <p>Every claim links back to the commit, the email, the ticket, the transcript. Nothing is hallucinated. Nothing is summarised without a citation.</p>
+      </div>
+      <div class="guardrail">
+        <h3>Read-only</h3>
+        <p>Hive never sends, never commits, never updates a ticket. It observes and answers. The trust model is simple: it cannot break anything.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== PRIVACY & GUARDRAILS ====== -->
+  <section class="reveal">
+    <p class="tag">Trust &amp; privacy</p>
+    <h2>An always-listening agent earns trust by being caged.</h2>
+    <p>The first question any security or HR review asks is "what can it do with the data?" The answer needs to be: nothing, except answer questions from authorised people.</p>
+
+    <div class="guardrails" style="margin-top:22px">
+      <div class="guardrail">
+        <h3>Read-only access</h3>
+        <p>No write permissions to any system. Cannot send emails, update tickets, or push code. Observation only.</p>
+      </div>
+      <div class="guardrail">
+        <h3>Role-scoped visibility</h3>
+        <p>A manager sees their team. An engineer sees their own trail and the org knowledge graph. Nobody sees up.</p>
+      </div>
+      <div class="guardrail">
+        <h3>No personal surveillance</h3>
+        <p>Hive reports on work artifacts — commits, tickets, deliverables. Not hours, not keystrokes, not tone-of-voice sentiment scores. Work output, not worker monitoring.</p>
+      </div>
+      <div class="guardrail">
+        <h3>Audit log</h3>
+        <p>Every query to Hive is logged. Who asked what, when. Full transparency on who's accessing the knowledge layer.</p>
+      </div>
+    </div>
+    <p>The design principle: <strong>Hive knows everything and can do nothing.</strong> That asymmetry is what makes it safe to give it full read access.</p>
+  </section>
+
+  <!-- ====== INTEGRATION ====== -->
+  <section class="reveal">
+    <p class="tag">Integration surface</p>
+    <h2>Built on the systems LevelShift already runs.</h2>
+    <p>No new tools to adopt. Hive connects to what exists.</p>
+
+    <div class="guardrails" style="margin-top:16px">
+      <div class="guardrail">
+        <h3>Email</h3>
+        <p>Microsoft 365 / Exchange — CC or shared mailbox. Existing infra, no migration.</p>
+      </div>
+      <div class="guardrail">
+        <h3>Calls</h3>
+        <p>Teams meeting transcripts via Graph API, or any tool that produces a transcript file.</p>
+      </div>
+      <div class="guardrail">
+        <h3>Tasks</h3>
+        <p>Azure DevOps work items, boards, and sprints via REST API. Already in the stack.</p>
+      </div>
+      <div class="guardrail">
+        <h3>Code</h3>
+        <p>Azure Repos or GitHub — webhook on push/PR events. Standard Git integration.</p>
+      </div>
+    </div>
+    <p>The retrieval engine (ChromaDB or equivalent vector store) indexes everything and serves the query interface. The LLM layer (Mistral, GPT, or Claude) handles natural-language queries and status generation. I've already built both of these components in production for other projects.</p>
+  </section>
+
+  <!-- ====== IMPACT ====== -->
+  <section class="reveal">
+    <p class="tag">Business impact</p>
+    <h2>Time returned, measured in hours nobody wants to spend.</h2>
+
+    <div class="guardrails" style="margin-top:16px">
+      <div class="guardrail">
+        <h3>Status reports</h3>
+        <p>~30 min/person/week × team size. For a 10-person team, that's 5 hours/week of engineers writing about work instead of doing it.</p>
+      </div>
+      <div class="guardrail">
+        <h3>Manager assembly</h3>
+        <p>~45 min/day spent checking DevOps, email, and chat for the team picture. 3.75 hrs/week.</p>
+      </div>
+      <div class="guardrail">
+        <h3>"Who knows X?"</h3>
+        <p>Average time to find the right person for a question: 1–3 days of asking around. Hive: 10 seconds.</p>
+      </div>
+      <div class="guardrail">
+        <h3>Onboarding</h3>
+        <p>New hires spend weeks learning who owns what. Hive is the institutional memory they can query from day one.</p>
+      </div>
+    </div>
+    <p>Conservatively, Hive saves <strong>8–12 hours per team per week</strong> — not by automating the work itself, but by eliminating the overhead of knowing what the work is.</p>
+  </section>
+
+  <!-- ====== CLOSE ====== -->
+  <section class="reveal">
+    <p class="tag">What I'm asking for</p>
+    <h2>One team. Read access. Four weeks.</h2>
+    <div class="close-box">
+      <p>I've built the retrieval layer (ChromaDB), the LLM integration (Mistral), the API plumbing (Salesforce REST, token handling, error parsing), and the multi-agent orchestration pattern (AgentLine). The components exist. What's missing is <strong>permission to point them at a real team's work trail</strong> — email, DevOps, Git, calls — and four weeks to build the integration layer and prove the value.</p>
+      <p>The deliverable at the end of four weeks: a working Hive instance for one team, with auto-generated status reports, a queryable knowledge base, and measured time savings against the manual baseline. Not a slide. A login.</p>
+    </div>
+  </section>
+
+</div>
+
+<footer style="max-width:960px;margin:0 auto;padding:28px 28px 60px;border-top:1px solid var(--border);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.30)">
+  <span>Hive · ShiftSpark 2026 · Reimagine</span>
+  <span>Nivas · LevelShift</span>
+</footer>
+
+<script>
+(function(){
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    document.querySelectorAll('.reveal').forEach(function(el){el.classList.add('in')});
+    return;
+  }
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}
+    });
+  },{rootMargin:'0px 0px -10% 0px'});
+  document.querySelectorAll('.reveal').forEach(function(el){io.observe(el)});
+})();
+</script>
+</body>
+</html>

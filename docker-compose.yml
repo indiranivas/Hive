@@ -1,0 +1,90 @@
+services:
+  api:
+    build: ./backend
+    ports: ["8000:8000"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://hive:${DB_PASSWORD:-hive}@postgres:5432/hive
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000
+
+  bot:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.bot
+    ports: ["3978:3978"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://hive:${DB_PASSWORD:-hive}@postgres:5432/hive
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres: { condition: service_healthy }
+    command: python -m bot.app
+
+  worker:
+    build: ./backend
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://hive:${DB_PASSWORD:-hive}@postgres:5432/hive
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    command: celery -A workers.celery_app worker --loglevel=info
+
+  scheduler:
+    build: ./backend
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://hive:${DB_PASSWORD:-hive}@postgres:5432/hive
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      redis: { condition: service_healthy }
+    command: celery -A workers.celery_app beat --loglevel=info
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: hive
+      POSTGRES_USER: hive
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-hive}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hive -d hive"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Optional. Set VECTOR_PROVIDER=chroma and CHROMA_URL=http://chromadb:8000, and
+  # build the image with requirements-ml.txt so the chromadb client is installed.
+  # Note: 8001 is the host port only -- inside the network Chroma listens on 8000.
+  chromadb:
+    image: chromadb/chroma:latest
+    ports: ["8001:8000"]
+    volumes: [chromadata:/chroma/chroma]
+
+  dashboard:
+    build: ./dashboard
+    ports: ["3000:3000"]
+    environment:
+      # Baked into the client bundle at build time, so it must be the URL a
+      # browser can reach -- not the in-network service name.
+      NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:8000}
+    depends_on: [api]
+
+volumes:
+  pgdata:
+  chromadata:

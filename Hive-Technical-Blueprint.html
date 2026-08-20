@@ -1,0 +1,1891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hive — Complete Technical Blueprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0}
+:root{--bg:#0C1017;--surface:#151B28;--card:#1C2435;--border:rgba(255,255,255,.08);--text:#C8D2E4;--bright:#F0F4FF;--honey:#F59E0B;--lavender:#A78BFA;--mint:#34D399;--sky:#38BDF8;--rose:#FB7185;--sans:"DM Sans",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:40px 28px 120px}
+h1{font-size:clamp(36px,5vw,52px);font-weight:700;color:var(--bright);letter-spacing:-.03em;line-height:1;margin:0 0 12px}
+h1 span{color:var(--honey)}
+h2{font-size:24px;font-weight:700;color:var(--bright);letter-spacing:-.02em;margin:60px 0 16px;padding-top:20px;border-top:1px solid var(--border)}
+h3{font-size:18px;font-weight:600;color:var(--bright);margin:32px 0 10px}
+h4{font-size:15px;font-weight:600;color:var(--honey);margin:24px 0 8px;font-family:var(--mono);letter-spacing:.02em}
+p{margin:0 0 14px;max-width:72ch}
+strong{color:var(--bright);font-weight:600}
+a{color:var(--sky);text-decoration:none}
+a:hover{text-decoration:underline}
+code{font-family:var(--mono);font-size:13px;background:rgba(255,255,255,.06);padding:2px 6px;border-radius:3px;color:var(--mint)}
+pre{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:18px 20px;overflow-x:auto;margin:0 0 18px;font-family:var(--mono);font-size:13px;line-height:1.6;color:var(--text)}
+pre code{background:none;padding:0;border-radius:0}
+ul,ol{padding-left:22px;margin:0 0 18px}
+li{margin:0 0 8px}
+table{width:100%;border-collapse:collapse;margin:0 0 20px;font-size:14px}
+th,td{text-align:left;padding:10px 14px;border:1px solid var(--border)}
+th{background:var(--surface);color:var(--bright);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+td code{font-size:12px}
+.tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--honey);margin:0 0 8px;display:block}
+.box{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:22px 24px;margin:0 0 20px}
+.box.warn{border-left:3px solid var(--honey)}
+.box.info{border-left:3px solid var(--sky)}
+.box.success{border-left:3px solid var(--mint)}
+.phase{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:24px;margin:0 0 16px}
+.phase .num{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--lavender);margin:0 0 6px}
+hr{border:0;border-top:1px solid var(--border);margin:40px 0}
+.toc{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:24px 28px;margin:0 0 40px}
+.toc h3{margin:0 0 14px;font-size:14px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--honey)}
+.toc ol{padding-left:20px;margin:0;counter-reset:toc}
+.toc li{margin:0 0 6px;font-size:14px}
+.toc a{color:var(--text)}
+.toc a:hover{color:var(--bright)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="tag">Technical Blueprint v1.0</p>
+<h1><span>Hive</span> — Complete Build Specification</h1>
+<p style="font-size:18px;color:var(--bright);margin:0 0 32px">The full architecture, stack, schemas, integration guides, UI spec, and phased build plan to create Hive from scratch. Designed for long-term development.</p>
+
+<nav class="toc">
+<h3>Contents</h3>
+<ol>
+<li><a href="#vision">Product Vision & Scope</a></li>
+<li><a href="#arch">System Architecture</a></li>
+<li><a href="#stack">Tech Stack</a></li>
+<li><a href="#data">Data Models & Schemas</a></li>
+<li><a href="#ingest">Ingestion Pipeline (4 Streams)</a></li>
+<li><a href="#knowledge">Knowledge Engine</a></li>
+<li><a href="#kr">Knowledge Request Framework</a></li>
+<li><a href="#teams">Teams Bot (Frontend #1)</a></li>
+<li><a href="#dash">Manager Dashboard (Frontend #2)</a></li>
+<li><a href="#auth">Auth & Permissions</a></li>
+<li><a href="#privacy">Privacy & Guardrails</a></li>
+<li><a href="#deploy">Deployment & Infra</a></li>
+<li><a href="#plan">Phased Build Plan</a></li>
+<li><a href="#prompts">AI Prompts Library</a></li>
+<li><a href="#api">API Reference</a></li>
+</ol>
+</nav>
+
+<!-- ============================================================ -->
+<h2 id="vision">1. Product Vision & Scope</h2>
+
+<h3>What Hive Is</h3>
+<p>A passive AI agent that absorbs a team's entire work trail — emails, calls, tasks, Git commits — and builds a live, queryable knowledge layer. Two surfaces: a <strong>Teams chatbot</strong> for everyone and a <strong>web dashboard</strong> for managers.</p>
+
+<h3>Core Capabilities</h3>
+<table>
+<tr><th>Capability</th><th>Description</th><th>Surface</th></tr>
+<tr><td>Natural language Q&A</td><td>Ask anything about the team's work, get a sourced answer</td><td>Teams bot</td></tr>
+<tr><td>Proactive dependency routing</td><td>When you're assigned a task, Hive tells you who's touched related code/modules</td><td>Teams bot</td></tr>
+<tr><td>Auto status reports</td><td>Weekly per-person status generated from commits, tickets, PRs, emails</td><td>Dashboard</td></tr>
+<tr><td>Expertise map</td><td>"Who at the company knows X?" with evidence</td><td>Both</td></tr>
+<tr><td>Knowledge Request framework</td><td>Detect gaps → route to expert → capture answer → permanent repo</td><td>Teams bot</td></tr>
+<tr><td>Team pulse & analytics</td><td>Activity bars, blocker flags, knowledge gap analytics</td><td>Dashboard</td></tr>
+</table>
+
+<h3>What Hive Does NOT Do</h3>
+<ul>
+<li>Write — no sending emails, updating tickets, pushing code, or posting messages on behalf of users</li>
+<li>Monitor individuals — no keystroke tracking, no sentiment scoring, no "productivity" ranking</li>
+<li>Make decisions — surfaces information, never acts on it</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="arch">2. System Architecture</h2>
+
+<h3>High-Level Architecture</h3>
+<pre><code>┌──────────────────────────────────────────────────────────────────┐
+│                        DATA SOURCES                              │
+│  ┌──────────┐ ┌──────────┐ ┌──────────────┐ ┌───────────────┐   │
+│  │ Microsoft│ │ Microsoft│ │ Azure DevOps │ │ Azure Repos / │   │
+│  │ 365 Mail │ │ Teams    │ │ Work Items   │ │ GitHub        │   │
+│  └────┬─────┘ └────┬─────┘ └──────┬───────┘ └──────┬────────┘   │
+│       │             │              │                │            │
+└───────┼─────────────┼──────────────┼────────────────┼────────────┘
+        │             │              │                │
+        ▼             ▼              ▼                ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                    INGESTION LAYER                                │
+│  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌─────────────────┐  │
+│  │ Email     │ │ Call/Meet │ │ Task      │ │ Git             │  │
+│  │ Connector │ │ Connector │ │ Connector │ │ Connector       │  │
+│  └─────┬─────┘ └─────┬─────┘ └─────┬─────┘ └───────┬─────────┘  │
+│        └──────────────┴─────────────┴───────────────┘            │
+│                             │                                    │
+│                    ┌────────▼────────┐                            │
+│                    │  Normalizer &   │                            │
+│                    │  Chunker        │                            │
+│                    └────────┬────────┘                            │
+└─────────────────────────────┼────────────────────────────────────┘
+                              │
+                              ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                    KNOWLEDGE ENGINE                               │
+│  ┌────────────┐  ┌────────────┐  ┌────────────────────────────┐  │
+│  │ Vector DB  │  │ Relational │  │ LLM Layer                  │  │
+│  │ (ChromaDB/ │  │ DB         │  │ (Mistral / Claude /        │  │
+│  │  Qdrant)   │  │ (Postgres) │  │  GPT — configurable)       │  │
+│  └────────────┘  └────────────┘  └────────────────────────────┘  │
+│  ┌────────────────────────────────────────────────────────────┐   │
+│  │ Knowledge Request Manager                                  │   │
+│  │ (gap detection → routing → capture → indexing)             │   │
+│  └────────────────────────────────────────────────────────────┘   │
+└──────────────────────────────┬───────────────────────────────────┘
+                               │
+              ┌────────────────┼────────────────┐
+              ▼                                 ▼
+┌──────────────────────┐          ┌──────────────────────────┐
+│   TEAMS BOT          │          │   MANAGER DASHBOARD      │
+│   (@Hive)            │          │   (Web App)              │
+│                      │          │                          │
+│ • Q&A                │          │ • Team pulse             │
+│ • Knowledge Requests │          │ • Auto-status            │
+│ • Dependency routing │          │ • Expertise map          │
+│ • Expert connections │          │ • Gap analytics          │
+│                      │          │ • Knowledge repo browser │
+└──────────────────────┘          └──────────────────────────┘
+</code></pre>
+
+<h3>Component Responsibility Matrix</h3>
+<table>
+<tr><th>Component</th><th>Responsibility</th><th>Tech</th></tr>
+<tr><td>Ingestion Connectors</td><td>Pull data from 4 sources on schedule + webhooks</td><td>Python / Node.js workers</td></tr>
+<tr><td>Normalizer</td><td>Convert raw data → unified <code>WorkArtifact</code> schema, chunk for embedding</td><td>Python</td></tr>
+<tr><td>Vector DB</td><td>Store embeddings for semantic search</td><td>ChromaDB → Qdrant (production)</td></tr>
+<tr><td>Relational DB</td><td>Store structured data: people, teams, artifacts metadata, knowledge requests</td><td>PostgreSQL</td></tr>
+<tr><td>LLM Layer</td><td>Answer queries, generate statuses, detect expertise, route knowledge requests</td><td>Mistral / Claude API</td></tr>
+<tr><td>Knowledge Request Manager</td><td>Gap detection, expert routing, answer capture, repo indexing</td><td>Python service</td></tr>
+<tr><td>Teams Bot</td><td>User-facing chatbot in Microsoft Teams</td><td>Bot Framework SDK (Python)</td></tr>
+<tr><td>Dashboard</td><td>Manager web UI</td><td>Next.js / React</td></tr>
+<tr><td>API Gateway</td><td>REST API serving both surfaces</td><td>FastAPI (Python)</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="stack">3. Tech Stack</h2>
+
+<h3>Recommended Stack</h3>
+<table>
+<tr><th>Layer</th><th>Technology</th><th>Why</th></tr>
+<tr><td>Backend API</td><td><code>FastAPI</code> (Python 3.11+)</td><td>Async, fast, typed, great for ML pipelines</td></tr>
+<tr><td>Task Queue</td><td><code>Celery</code> + <code>Redis</code></td><td>Scheduled ingestion, background embedding, async processing</td></tr>
+<tr><td>Relational DB</td><td><code>PostgreSQL 16</code></td><td>Structured data, JSON support, proven at scale</td></tr>
+<tr><td>Vector DB</td><td><code>ChromaDB</code> (dev) → <code>Qdrant</code> (prod)</td><td>ChromaDB for quick start, Qdrant for production performance</td></tr>
+<tr><td>LLM</td><td><code>Mistral</code> (self-hosted or API) / <code>Claude API</code></td><td>Configurable — swap models without changing app code</td></tr>
+<tr><td>Embeddings</td><td><code>sentence-transformers</code> / <code>Mistral Embed</code></td><td>Local embedding or API-based</td></tr>
+<tr><td>Teams Bot</td><td><code>botbuilder-python</code> (Bot Framework SDK)</td><td>Official Microsoft SDK for Teams bots</td></tr>
+<tr><td>Dashboard</td><td><code>Next.js 14</code> + <code>Tailwind CSS</code> + <code>shadcn/ui</code></td><td>Fast, SSR, excellent DX</td></tr>
+<tr><td>Auth</td><td><code>Azure AD</code> (Entra ID) / <code>MSAL</code></td><td>SSO with Microsoft 365 — everyone already has accounts</td></tr>
+<tr><td>Deployment</td><td><code>Docker</code> + <code>Azure Container Apps</code> or <code>Render</code></td><td>Containerized, scalable, affordable</td></tr>
+<tr><td>Monitoring</td><td><code>Prometheus</code> + <code>Grafana</code> or <code>Azure Monitor</code></td><td>Observe ingestion health, query latency, LLM costs</td></tr>
+</table>
+
+<h3>Project Structure</h3>
+<pre><code>hive/
+├── backend/
+│   ├── api/                    # FastAPI app
+│   │   ├── main.py             # App entry, CORS, middleware
+│   │   ├── routes/
+│   │   │   ├── query.py        # /api/query — natural language Q&A
+│   │   │   ├── status.py       # /api/status — auto-generated statuses
+│   │   │   ├── knowledge.py    # /api/knowledge-requests — KR CRUD
+│   │   │   ├── expertise.py    # /api/expertise — who-knows-what
+│   │   │   ├── dashboard.py    # /api/dashboard — team pulse data
+│   │   │   └── admin.py        # /api/admin — team/user management
+│   │   ├── models/             # SQLAlchemy / Pydantic models
+│   │   ├── services/           # Business logic
+│   │   │   ├── query_engine.py
+│   │   │   ├── status_generator.py
+│   │   │   ├── expertise_mapper.py
+│   │   │   ├── kr_manager.py
+│   │   │   └── dependency_router.py
+│   │   └── core/
+│   │       ├── config.py       # Env vars, secrets
+│   │       ├── security.py     # Azure AD token validation
+│   │       └── llm.py          # LLM abstraction layer
+│   │
+│   ├── ingestion/              # Data connectors
+│   │   ├── email_connector.py  # Microsoft Graph API — mail
+│   │   ├── call_connector.py   # Microsoft Graph API — transcripts
+│   │   ├── task_connector.py   # Azure DevOps REST API
+│   │   ├── git_connector.py    # Azure Repos / GitHub API
+│   │   ├── normalizer.py       # Raw → WorkArtifact schema
+│   │   └── embedder.py         # Chunk + embed into vector DB
+│   │
+│   ├── bot/                    # Teams bot
+│   │   ├── app.py              # Bot Framework entry
+│   │   ├── handlers.py         # Message handlers
+│   │   ├── cards.py            # Adaptive Card templates
+│   │   └── proactive.py        # Proactive messaging (dependency alerts)
+│   │
+│   ├── workers/                # Celery tasks
+│   │   ├── ingest_email.py
+│   │   ├── ingest_calls.py
+│   │   ├── ingest_tasks.py
+│   │   ├── ingest_git.py
+│   │   ├── generate_status.py
+│   │   ├── update_expertise.py
+│   │   └── route_kr.py
+│   │
+│   ├── db/
+│   │   ├── migrations/         # Alembic migrations
+│   │   └── seed.py             # Dev seed data
+│   │
+│   ├── tests/
+│   ├── Dockerfile
+│   └── requirements.txt
+│
+├── dashboard/                  # Next.js frontend
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── page.tsx                 # Team pulse overview
+│   │   │   ├── status/page.tsx          # Auto-generated statuses
+│   │   │   ├── expertise/page.tsx       # Expertise map
+│   │   │   ├── knowledge/page.tsx       # Knowledge repo browser
+│   │   │   ├── knowledge/gaps/page.tsx  # Gap analytics
+│   │   │   └── settings/page.tsx        # Team config
+│   │   ├── components/
+│   │   │   ├── TeamPulse.tsx
+│   │   │   ├── StatusCard.tsx
+│   │   │   ├── ExpertiseGraph.tsx
+│   │   │   ├── KnowledgeRequestCard.tsx
+│   │   │   ├── ActivityBars.tsx
+│   │   │   └── GapAnalytics.tsx
+│   │   └── lib/
+│   │       ├── api.ts           # API client
+│   │       └── auth.ts          # MSAL auth
+│   ├── tailwind.config.ts
+│   ├── Dockerfile
+│   └── package.json
+│
+├── docker-compose.yml
+├── .env.example
+└── README.md
+</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="data">4. Data Models & Schemas</h2>
+
+<h3>Core Entities (PostgreSQL)</h3>
+
+<h4>people</h4>
+<pre><code>CREATE TABLE people (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    azure_ad_id     VARCHAR(128) UNIQUE NOT NULL,
+    email           VARCHAR(256) UNIQUE NOT NULL,
+    display_name    VARCHAR(256) NOT NULL,
+    team_id         UUID REFERENCES teams(id),
+    role            VARCHAR(32) DEFAULT 'member',   -- 'member' | 'manager' | 'admin'
+    created_at      TIMESTAMPTZ DEFAULT now(),
+    updated_at      TIMESTAMPTZ DEFAULT now()
+);
+</code></pre>
+
+<h4>teams</h4>
+<pre><code>CREATE TABLE teams (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name            VARCHAR(256) NOT NULL,
+    org_id          UUID REFERENCES orgs(id),
+    manager_id      UUID REFERENCES people(id),
+    created_at      TIMESTAMPTZ DEFAULT now()
+);
+</code></pre>
+
+<h4>work_artifacts — the universal record</h4>
+<pre><code>CREATE TABLE work_artifacts (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    source          VARCHAR(32) NOT NULL,    -- 'email' | 'call' | 'task' | 'git'
+    source_id       VARCHAR(512) NOT NULL,   -- external ID (message-id, commit SHA, etc.)
+    author_id       UUID REFERENCES people(id),
+    team_id         UUID REFERENCES teams(id),
+    artifact_type   VARCHAR(64) NOT NULL,    -- 'email_thread' | 'meeting_transcript' |
+                                             -- 'work_item' | 'commit' | 'pull_request' |
+                                             -- 'pr_review' | 'comment'
+    title           TEXT,
+    content         TEXT NOT NULL,            -- full text content
+    metadata        JSONB DEFAULT '{}',       -- flexible: {repo, branch, ticket_id, attendees, ...}
+    occurred_at     TIMESTAMPTZ NOT NULL,     -- when the artifact was created in the source
+    ingested_at     TIMESTAMPTZ DEFAULT now(),
+    UNIQUE (source, source_id)
+);
+
+CREATE INDEX idx_artifacts_author ON work_artifacts(author_id);
+CREATE INDEX idx_artifacts_team ON work_artifacts(team_id);
+CREATE INDEX idx_artifacts_type ON work_artifacts(artifact_type);
+CREATE INDEX idx_artifacts_occurred ON work_artifacts(occurred_at DESC);
+CREATE INDEX idx_artifacts_metadata ON work_artifacts USING GIN(metadata);
+</code></pre>
+
+<h4>expertise_scores</h4>
+<pre><code>CREATE TABLE expertise_scores (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    person_id       UUID REFERENCES people(id),
+    topic           VARCHAR(256) NOT NULL,   -- 'salesforce-api' | 'react' | 'billing-service'
+    score           FLOAT DEFAULT 0.0,       -- computed from artifact frequency + recency
+    evidence_count  INT DEFAULT 0,           -- number of artifacts backing this
+    last_seen       TIMESTAMPTZ,             -- most recent artifact on this topic
+    updated_at      TIMESTAMPTZ DEFAULT now(),
+    UNIQUE (person_id, topic)
+);
+
+CREATE INDEX idx_expertise_topic ON expertise_scores(topic);
+CREATE INDEX idx_expertise_score ON expertise_scores(score DESC);
+</code></pre>
+
+<h4>knowledge_requests</h4>
+<pre><code>CREATE TABLE knowledge_requests (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    requester_id    UUID REFERENCES people(id) NOT NULL,
+    question        TEXT NOT NULL,
+    context         TEXT,                     -- what they were working on when they asked
+    status          VARCHAR(32) DEFAULT 'open',  -- 'open' | 'routed' | 'answered' | 'indexed'
+    routed_to_id    UUID REFERENCES people(id),
+    answer          TEXT,
+    answered_by_id  UUID REFERENCES people(id),
+    answered_at     TIMESTAMPTZ,
+    tags            TEXT[] DEFAULT '{}',      -- topic tags for indexing
+    related_artifacts UUID[] DEFAULT '{}',   -- links to work_artifacts
+    created_at      TIMESTAMPTZ DEFAULT now(),
+    updated_at      TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX idx_kr_status ON knowledge_requests(status);
+CREATE INDEX idx_kr_tags ON knowledge_requests USING GIN(tags);
+</code></pre>
+
+<h4>status_reports</h4>
+<pre><code>CREATE TABLE status_reports (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    person_id       UUID REFERENCES people(id),
+    team_id         UUID REFERENCES teams(id),
+    period_start    DATE NOT NULL,
+    period_end      DATE NOT NULL,
+    summary         TEXT NOT NULL,            -- LLM-generated summary
+    evidence        JSONB NOT NULL,           -- [{artifact_id, excerpt, type}, ...]
+    generated_at    TIMESTAMPTZ DEFAULT now(),
+    UNIQUE (person_id, period_start, period_end)
+);
+</code></pre>
+
+<h4>query_log — audit trail</h4>
+<pre><code>CREATE TABLE query_log (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID REFERENCES people(id),
+    query_text      TEXT NOT NULL,
+    response_text   TEXT,
+    sources_used    JSONB DEFAULT '[]',      -- [{artifact_id, relevance_score}, ...]
+    surface         VARCHAR(16) NOT NULL,    -- 'teams' | 'dashboard'
+    latency_ms      INT,
+    created_at      TIMESTAMPTZ DEFAULT now()
+);
+</code></pre>
+
+<h3>Vector Store Schema</h3>
+<pre><code># ChromaDB / Qdrant collection
+
+Collection: "hive_artifacts"
+  - id:        UUID (matches work_artifacts.id)
+  - embedding: float[768] or float[1024] depending on model
+  - metadata:
+      source:        string
+      artifact_type:  string
+      author_id:      string (UUID)
+      author_name:    string
+      team_id:        string (UUID)
+      occurred_at:    string (ISO datetime)
+      title:          string
+      tags:           string[] (auto-extracted topics)
+
+Collection: "hive_knowledge_repo"
+  - id:        UUID (matches knowledge_requests.id)
+  - embedding: float[768]
+  - metadata:
+      question:       string
+      answer:         string
+      answered_by:    string
+      tags:           string[]
+      created_at:     string
+</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="ingest">5. Ingestion Pipeline (4 Streams)</h2>
+
+<div class="box info">
+<p><strong>Architecture pattern:</strong> Each connector runs as a Celery scheduled task (every 5–15 min) AND listens for real-time webhooks where available. Webhooks give instant updates; scheduled pulls catch anything webhooks miss.</p>
+</div>
+
+<h3>5.1 Email Connector</h3>
+
+<h4>Source: Microsoft Graph API</h4>
+<pre><code># Setup
+# 1. Register Azure AD app with Mail.Read (application) permission
+# 2. Use shared mailbox OR CC approach
+
+# Approach A: Shared Mailbox (Recommended)
+# Create hive@levelshift.com as a shared mailbox
+# CC it on all team threads — no individual mailbox access needed
+
+# Approach B: Application Permission
+# Mail.Read application permission — reads from specified users' mailboxes
+# More powerful but more sensitive; needs admin consent
+
+import httpx
+from msgraph import GraphServiceClient
+
+GRAPH_BASE = "https://graph.microsoft.com/v1.0"
+
+async def fetch_emails(mailbox: str, since: datetime) -> list[dict]:
+    """Fetch emails from the shared Hive mailbox since last check."""
+    url = f"{GRAPH_BASE}/users/{mailbox}/messages"
+    params = {
+        "$filter": f"receivedDateTime ge {since.isoformat()}",
+        "$select": "id,subject,bodyPreview,body,from,toRecipients,"
+                   "ccRecipients,receivedDateTime,conversationId",
+        "$orderby": "receivedDateTime desc",
+        "$top": 50
+    }
+    # Paginate through all results
+    messages = []
+    async with httpx.AsyncClient() as client:
+        while url:
+            resp = await client.get(url, headers=auth_headers(), params=params)
+            data = resp.json()
+            messages.extend(data.get("value", []))
+            url = data.get("@odata.nextLink")
+            params = None  # nextLink includes params
+    return messages
+
+def normalize_email(msg: dict, team_id: str) -> WorkArtifact:
+    """Convert Graph API email to WorkArtifact."""
+    return WorkArtifact(
+        source="email",
+        source_id=msg["id"],
+        author_id=resolve_person(msg["from"]["emailAddress"]["address"]),
+        team_id=team_id,
+        artifact_type="email_thread",
+        title=msg["subject"],
+        content=strip_html(msg["body"]["content"]),
+        metadata={
+            "conversation_id": msg["conversationId"],
+            "to": [r["emailAddress"]["address"] for r in msg["toRecipients"]],
+            "cc": [r["emailAddress"]["address"] for r in msg["ccRecipients"]],
+        },
+        occurred_at=msg["receivedDateTime"],
+    )
+</code></pre>
+
+<h4>Webhook setup (real-time)</h4>
+<pre><code># POST https://graph.microsoft.com/v1.0/subscriptions
+{
+    "changeType": "created",
+    "notificationUrl": "https://hive.levelshift.com/webhooks/email",
+    "resource": "users/hive@levelshift.com/messages",
+    "expirationDateTime": "2026-09-18T00:00:00Z",
+    "clientState": "hive-secret-state"
+}
+</code></pre>
+
+<h3>5.2 Call / Meeting Connector</h3>
+
+<h4>Source: Microsoft Teams — Graph API Meeting Transcripts</h4>
+<pre><code># Requires: OnlineMeetingTranscript.Read.All permission
+# Transcripts must be enabled in Teams admin center
+
+async def fetch_transcripts(since: datetime) -> list[dict]:
+    """Fetch meeting transcripts from Teams."""
+    # Step 1: Get recent online meetings
+    url = f"{GRAPH_BASE}/users/{{user_id}}/onlineMeetings"
+    # Step 2: For each meeting, get transcripts
+    # GET /users/{userId}/onlineMeetings/{meetingId}/transcripts
+    # Step 3: Get transcript content
+    # GET .../transcripts/{transcriptId}/content?$format=text/vtt
+
+    # Parse VTT format to extract speaker-labeled segments
+    pass
+
+def normalize_transcript(meeting: dict, vtt_content: str, team_id: str) -> WorkArtifact:
+    """Convert meeting transcript to WorkArtifact."""
+    speakers = parse_vtt_speakers(vtt_content)
+    return WorkArtifact(
+        source="call",
+        source_id=meeting["id"],
+        author_id=None,  # multi-author — stored in metadata
+        team_id=team_id,
+        artifact_type="meeting_transcript",
+        title=meeting["subject"],
+        content=vtt_to_plaintext(vtt_content),
+        metadata={
+            "attendees": [a["emailAddress"]["address"]
+                          for a in meeting.get("participants", {}).get("attendees", [])],
+            "speakers": speakers,
+            "duration_minutes": meeting.get("endDateTime") - meeting.get("startDateTime"),
+            "meeting_url": meeting.get("joinWebUrl"),
+        },
+        occurred_at=meeting["startDateTime"],
+    )
+</code></pre>
+
+<div class="box warn">
+<p><strong>Fallback:</strong> If Graph API transcript access isn't available, accept manual transcript uploads (drag a .vtt or .txt file into the Teams bot). Start with this — it works day one with zero admin permissions.</p>
+</div>
+
+<h3>5.3 Task / Backlog Connector</h3>
+
+<h4>Source: Azure DevOps REST API</h4>
+<pre><code># Azure DevOps PAT with Work Items (Read) scope
+ADO_BASE = "https://dev.azure.com/{org}/{project}/_apis"
+
+async def fetch_work_items(since: datetime) -> list[dict]:
+    """Fetch recently updated work items via WIQL."""
+    wiql = {
+        "query": f"""
+        SELECT [System.Id], [System.Title], [System.State],
+               [System.AssignedTo], [System.ChangedDate],
+               [System.Description], [System.Tags],
+               [System.WorkItemType], [System.IterationPath]
+        FROM WorkItems
+        WHERE [System.ChangedDate] >= '{since.strftime('%Y-%m-%d')}'
+        ORDER BY [System.ChangedDate] DESC
+        """
+    }
+    resp = await client.post(f"{ADO_BASE}/wit/wiql?api-version=7.1", json=wiql)
+    ids = [item["id"] for item in resp.json()["workItems"]]
+
+    # Batch fetch full work items (max 200 per call)
+    items = []
+    for batch in chunks(ids, 200):
+        resp = await client.get(
+            f"{ADO_BASE}/wit/workitems?ids={','.join(map(str, batch))}"
+            f"&$expand=relations&api-version=7.1"
+        )
+        items.extend(resp.json()["value"])
+    return items
+
+def normalize_work_item(item: dict, team_id: str) -> WorkArtifact:
+    fields = item["fields"]
+    return WorkArtifact(
+        source="task",
+        source_id=str(item["id"]),
+        author_id=resolve_person(fields.get("System.AssignedTo", {}).get("uniqueName")),
+        team_id=team_id,
+        artifact_type="work_item",
+        title=fields["System.Title"],
+        content=f"{fields['System.Title']}\n\nState: {fields['System.State']}\n"
+                f"Type: {fields['System.WorkItemType']}\n"
+                f"Description: {strip_html(fields.get('System.Description', ''))}",
+        metadata={
+            "state": fields["System.State"],
+            "work_item_type": fields["System.WorkItemType"],
+            "iteration": fields.get("System.IterationPath"),
+            "tags": fields.get("System.Tags", "").split("; "),
+            "priority": fields.get("Microsoft.VSTS.Common.Priority"),
+            "ado_url": item["url"],
+        },
+        occurred_at=fields["System.ChangedDate"],
+    )
+</code></pre>
+
+<h4>Webhook (real-time via Service Hooks)</h4>
+<pre><code># Azure DevOps → Project Settings → Service Hooks → Web Hooks
+# Event: Work item updated
+# URL: https://hive.levelshift.com/webhooks/ado
+# Filters: Area path, Work item type as needed
+</code></pre>
+
+<h3>5.4 Git Connector</h3>
+
+<h4>Source: Azure Repos / GitHub API</h4>
+<pre><code># Azure Repos
+async def fetch_commits(repo_id: str, since: datetime) -> list[dict]:
+    url = f"{ADO_BASE}/git/repositories/{repo_id}/commits"
+    params = {
+        "searchCriteria.fromDate": since.isoformat(),
+        "api-version": "7.1",
+        "$top": 100
+    }
+    resp = await client.get(url, params=params)
+    return resp.json()["value"]
+
+async def fetch_pull_requests(repo_id: str, since: datetime) -> list[dict]:
+    url = f"{ADO_BASE}/git/repositories/{repo_id}/pullrequests"
+    params = {
+        "searchCriteria.status": "all",
+        "api-version": "7.1",
+        "$top": 50
+    }
+    resp = await client.get(url, params=params)
+    # Filter by date client-side
+    return [pr for pr in resp.json()["value"]
+            if parse_dt(pr["creationDate"]) >= since]
+
+def normalize_commit(commit: dict, repo_name: str, team_id: str) -> WorkArtifact:
+    return WorkArtifact(
+        source="git",
+        source_id=commit["commitId"],
+        author_id=resolve_person(commit["author"]["email"]),
+        team_id=team_id,
+        artifact_type="commit",
+        title=commit["comment"].split("\n")[0][:200],
+        content=commit["comment"],
+        metadata={
+            "repo": repo_name,
+            "sha": commit["commitId"],
+            "files_changed": commit.get("changeCounts", {}),
+            "url": commit["remoteUrl"],
+        },
+        occurred_at=commit["author"]["date"],
+    )
+
+def normalize_pr(pr: dict, repo_name: str, team_id: str) -> WorkArtifact:
+    return WorkArtifact(
+        source="git",
+        source_id=f"pr-{pr['pullRequestId']}",
+        author_id=resolve_person(pr["createdBy"]["uniqueName"]),
+        team_id=team_id,
+        artifact_type="pull_request",
+        title=pr["title"],
+        content=f"{pr['title']}\n\n{pr.get('description', '')}\n"
+                f"Status: {pr['status']}\n"
+                f"Reviewers: {', '.join(r['displayName'] for r in pr.get('reviewers', []))}",
+        metadata={
+            "repo": repo_name,
+            "pr_id": pr["pullRequestId"],
+            "status": pr["status"],
+            "source_branch": pr["sourceRefName"],
+            "target_branch": pr["targetRefName"],
+            "reviewers": [r["uniqueName"] for r in pr.get("reviewers", [])],
+            "url": pr.get("url"),
+        },
+        occurred_at=pr["creationDate"],
+    )
+</code></pre>
+
+<h3>5.5 Normalizer & Embedder</h3>
+<pre><code>from sentence_transformers import SentenceTransformer
+import chromadb
+
+# Load embedding model
+embed_model = SentenceTransformer("all-MiniLM-L6-v2")  # 384-dim, fast
+# For production: "BAAI/bge-large-en-v1.5" (1024-dim, more accurate)
+
+def chunk_content(content: str, max_tokens: int = 512) -> list[str]:
+    """Split content into overlapping chunks for embedding."""
+    sentences = content.split(". ")
+    chunks, current = [], []
+    current_len = 0
+    for sent in sentences:
+        word_count = len(sent.split())
+        if current_len + word_count > max_tokens and current:
+            chunks.append(". ".join(current) + ".")
+            # 20% overlap
+            overlap = max(1, len(current) // 5)
+            current = current[-overlap:]
+            current_len = sum(len(s.split()) for s in current)
+        current.append(sent)
+        current_len += word_count
+    if current:
+        chunks.append(". ".join(current))
+    return chunks
+
+async def embed_and_store(artifact: WorkArtifact):
+    """Chunk, embed, and store in vector DB + relational DB."""
+    # 1. Save to PostgreSQL
+    await db.work_artifacts.insert(artifact)
+
+    # 2. Chunk and embed
+    chunks = chunk_content(artifact.content)
+    embeddings = embed_model.encode(chunks)
+
+    # 3. Store in ChromaDB
+    collection = chroma_client.get_or_create_collection("hive_artifacts")
+    for i, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
+        collection.add(
+            ids=[f"{artifact.id}_{i}"],
+            embeddings=[embedding.tolist()],
+            documents=[chunk],
+            metadatas=[{
+                "artifact_id": str(artifact.id),
+                "source": artifact.source,
+                "artifact_type": artifact.artifact_type,
+                "author_id": str(artifact.author_id),
+                "author_name": artifact.author_name,
+                "team_id": str(artifact.team_id),
+                "occurred_at": artifact.occurred_at.isoformat(),
+                "title": artifact.title or "",
+                "chunk_index": i,
+            }]
+        )
+
+    # 4. Update expertise scores
+    topics = extract_topics(artifact.content)  # LLM or keyword extraction
+    await update_expertise(artifact.author_id, topics, artifact.occurred_at)
+</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="knowledge">6. Knowledge Engine</h2>
+
+<h3>6.1 Query Engine</h3>
+<pre><code>async def answer_query(
+    query: str,
+    user_id: str,
+    team_id: str | None = None,
+    scope: str = "team"  # "team" | "org"
+) -> QueryResponse:
+    """
+    Main Q&A pipeline:
+    1. Embed the query
+    2. Retrieve relevant chunks from vector DB
+    3. Filter by access scope
+    4. Send to LLM with context
+    5. Return sourced answer
+    """
+    # 1. Embed query
+    query_embedding = embed_model.encode(query).tolist()
+
+    # 2. Retrieve from vector DB
+    collection = chroma_client.get_collection("hive_artifacts")
+    where_filter = {"team_id": team_id} if scope == "team" else {}
+    results = collection.query(
+        query_embeddings=[query_embedding],
+        n_results=15,
+        where=where_filter if where_filter else None,
+    )
+
+    # Also search knowledge repo
+    kr_collection = chroma_client.get_collection("hive_knowledge_repo")
+    kr_results = kr_collection.query(
+        query_embeddings=[query_embedding],
+        n_results=5,
+    )
+
+    # 3. Build context
+    context_chunks = format_context(results, kr_results)
+
+    # 4. Send to LLM
+    response = await llm.chat(
+        system=QUERY_SYSTEM_PROMPT,
+        messages=[{
+            "role": "user",
+            "content": f"""Question: {query}
+
+Context from team's work trail:
+{context_chunks}
+
+Rules:
+- Answer ONLY from the provided context
+- Cite the source for every claim (commit SHA, ticket ID, email subject, meeting date)
+- If the context doesn't contain the answer, say so clearly
+- Suggest raising a Knowledge Request if the gap is significant
+- Name specific people when relevant
+"""
+        }]
+    )
+
+    # 5. Log the query
+    await db.query_log.insert(QueryLog(
+        user_id=user_id,
+        query_text=query,
+        response_text=response.text,
+        sources_used=extract_sources(results),
+        surface="teams",
+    ))
+
+    return QueryResponse(
+        answer=response.text,
+        sources=extract_sources(results),
+        has_gap=response.text contains "Knowledge Request",
+    )
+</code></pre>
+
+<h3>6.2 Status Generator</h3>
+<pre><code>async def generate_weekly_status(person_id: str, team_id: str,
+                                  week_start: date, week_end: date) -> StatusReport:
+    """Generate a weekly status report from work artifacts."""
+    # 1. Fetch all artifacts for this person in the date range
+    artifacts = await db.work_artifacts.query(
+        author_id=person_id,
+        occurred_at_gte=week_start,
+        occurred_at_lte=week_end,
+    )
+
+    # 2. Group by type
+    commits = [a for a in artifacts if a.artifact_type == "commit"]
+    prs = [a for a in artifacts if a.artifact_type == "pull_request"]
+    tickets = [a for a in artifacts if a.artifact_type == "work_item"]
+    emails = [a for a in artifacts if a.artifact_type == "email_thread"]
+    meetings = [a for a in artifacts if a.artifact_type == "meeting_transcript"]
+
+    # 3. Send to LLM for summarization
+    response = await llm.chat(
+        system=STATUS_SYSTEM_PROMPT,
+        messages=[{
+            "role": "user",
+            "content": f"""Generate a concise weekly status for {person.display_name}.
+Week: {week_start} to {week_end}
+
+Commits ({len(commits)}):
+{format_commits(commits)}
+
+Pull Requests ({len(prs)}):
+{format_prs(prs)}
+
+Tickets touched ({len(tickets)}):
+{format_tickets(tickets)}
+
+Email threads ({len(emails)}):
+{format_email_summaries(emails)}
+
+Meetings ({len(meetings)}):
+{format_meeting_summaries(meetings)}
+
+Rules:
+- 3-5 bullet points max
+- Lead with completed work, then in-progress, then blockers
+- Every claim must reference a specific artifact (commit SHA, ticket ID, PR number)
+- Flag anything blocked for 3+ days
+- No fluff, no praise — just facts
+"""
+        }]
+    )
+
+    # 4. Store
+    report = StatusReport(
+        person_id=person_id,
+        team_id=team_id,
+        period_start=week_start,
+        period_end=week_end,
+        summary=response.text,
+        evidence=[{"artifact_id": str(a.id), "type": a.artifact_type}
+                  for a in artifacts[:20]],
+    )
+    await db.status_reports.insert(report)
+    return report
+</code></pre>
+
+<h3>6.3 Expertise Mapper</h3>
+<pre><code>async def update_expertise(person_id: str, topics: list[str], occurred_at: datetime):
+    """Update expertise scores based on new artifact."""
+    for topic in topics:
+        existing = await db.expertise_scores.get(person_id=person_id, topic=topic)
+        if existing:
+            # Decay old score, boost with new evidence
+            recency_weight = 1.0 / max(1, (datetime.now() - occurred_at).days / 30)
+            new_score = existing.score * 0.95 + recency_weight * 0.3
+            await db.expertise_scores.update(
+                id=existing.id,
+                score=new_score,
+                evidence_count=existing.evidence_count + 1,
+                last_seen=occurred_at,
+            )
+        else:
+            await db.expertise_scores.insert(ExpertiseScore(
+                person_id=person_id,
+                topic=topic,
+                score=1.0,
+                evidence_count=1,
+                last_seen=occurred_at,
+            ))
+
+async def find_experts(topic: str, limit: int = 5) -> list[ExpertResult]:
+    """Find people with expertise on a topic."""
+    # Combine exact match + semantic search
+    exact = await db.expertise_scores.query(
+        topic_like=f"%{topic}%",
+        order_by="score DESC",
+        limit=limit
+    )
+
+    # Also search vector DB for semantic matches
+    embedding = embed_model.encode(topic).tolist()
+    vector_results = chroma_client.get_collection("hive_artifacts").query(
+        query_embeddings=[embedding],
+        n_results=50,
+    )
+
+    # Aggregate by author
+    author_counts = Counter()
+    for meta in vector_results["metadatas"][0]:
+        author_counts[meta["author_id"]] += 1
+
+    # Merge and rank
+    return merge_and_rank(exact, author_counts, limit)
+</code></pre>
+
+<h3>6.4 Proactive Dependency Router</h3>
+<pre><code>async def on_task_assigned(work_item: WorkArtifact, assignee_id: str):
+    """
+    Triggered when someone is assigned a task.
+    Finds related experts and proactively notifies in Teams.
+    """
+    # 1. Extract key topics from the task
+    topics = extract_topics(work_item.content + " " + str(work_item.metadata))
+
+    # 2. Find people who've worked on related things
+    related_people = []
+    for topic in topics:
+        experts = await find_experts(topic, limit=3)
+        related_people.extend(experts)
+
+    # 3. Find related artifacts (PRs, commits touching same modules)
+    if "repo" in work_item.metadata:
+        related_artifacts = await db.work_artifacts.query(
+            metadata_contains={"repo": work_item.metadata["repo"]},
+            artifact_type__in=["commit", "pull_request"],
+            limit=10,
+            order_by="occurred_at DESC",
+        )
+    else:
+        related_artifacts = []
+
+    # 4. Deduplicate and filter out the assignee themselves
+    unique_experts = deduplicate([
+        p for p in related_people if p.person_id != assignee_id
+    ])
+
+    if not unique_experts:
+        return  # No relevant context to surface
+
+    # 5. Send proactive message in Teams
+    card = build_dependency_card(
+        task=work_item,
+        experts=unique_experts[:3],
+        related_artifacts=related_artifacts[:5],
+    )
+    await teams_bot.send_proactive_message(
+        user_id=assignee_id,
+        card=card,
+    )
+</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="kr">7. Knowledge Request Framework</h2>
+
+<pre><code>async def handle_knowledge_gap(query: str, user_id: str, context: str = "") -> KR:
+    """
+    Called when Hive can't answer a query OR user manually raises a KR.
+    1. Create KR record
+    2. Find best expert to route to
+    3. Send notification to expert via Teams
+    4. Track until answered
+    """
+    # 1. Create the knowledge request
+    kr = await db.knowledge_requests.insert(KnowledgeRequest(
+        requester_id=user_id,
+        question=query,
+        context=context,
+        status="open",
+        tags=extract_topics(query),
+    ))
+
+    # 2. Find best expert
+    experts = []
+    for tag in kr.tags:
+        tag_experts = await find_experts(tag, limit=3)
+        experts.extend(tag_experts)
+
+    best_expert = rank_for_routing(experts)  # factors: score, recency, load
+
+    if best_expert:
+        # 3. Route to expert
+        kr.status = "routed"
+        kr.routed_to_id = best_expert.person_id
+        await db.knowledge_requests.update(kr)
+
+        # 4. Notify expert in Teams
+        card = build_kr_card(kr, requester=await db.people.get(user_id))
+        await teams_bot.send_proactive_message(
+            user_id=best_expert.person_id,
+            card=card,
+        )
+    else:
+        # No expert found — notify manager or post to team channel
+        await teams_bot.post_to_channel(
+            team_id=await get_user_team(user_id),
+            card=build_kr_open_card(kr),
+        )
+
+    return kr
+
+
+async def handle_kr_answer(kr_id: str, answer: str, answered_by: str):
+    """
+    Called when an expert answers a Knowledge Request.
+    1. Store answer
+    2. Index in knowledge repo (vector DB)
+    3. Notify requester
+    4. Update expertise scores
+    """
+    kr = await db.knowledge_requests.get(kr_id)
+
+    # 1. Store answer
+    kr.answer = answer
+    kr.answered_by_id = answered_by
+    kr.answered_at = datetime.now()
+    kr.status = "answered"
+    await db.knowledge_requests.update(kr)
+
+    # 2. Index in knowledge repo
+    embedding = embed_model.encode(f"{kr.question}\n{kr.answer}").tolist()
+    kr_collection = chroma_client.get_or_create_collection("hive_knowledge_repo")
+    kr_collection.add(
+        ids=[str(kr.id)],
+        embeddings=[embedding],
+        documents=[f"Q: {kr.question}\nA: {kr.answer}"],
+        metadatas=[{
+            "question": kr.question,
+            "answer": kr.answer,
+            "answered_by": answered_by,
+            "tags": kr.tags,
+            "created_at": kr.created_at.isoformat(),
+        }]
+    )
+    kr.status = "indexed"
+    await db.knowledge_requests.update(kr)
+
+    # 3. Notify requester
+    card = build_kr_answered_card(kr)
+    await teams_bot.send_proactive_message(
+        user_id=kr.requester_id,
+        card=card,
+    )
+
+    # 4. Update expertise scores for the answerer
+    await update_expertise(answered_by, kr.tags, datetime.now())
+
+
+def rank_for_routing(experts: list[ExpertResult]) -> ExpertResult | None:
+    """
+    Rank experts for KR routing. Factors:
+    - Expertise score (higher = better)
+    - Recency (worked on topic recently = better)
+    - Load (fewer open KRs routed to them = better)
+    """
+    for expert in experts:
+        open_kr_count = db.knowledge_requests.count(
+            routed_to_id=expert.person_id,
+            status="routed",
+        )
+        expert.routing_score = (
+            expert.score * 0.5 +
+            expert.recency_weight * 0.3 -
+            open_kr_count * 0.2
+        )
+    experts.sort(key=lambda e: e.routing_score, reverse=True)
+    return experts[0] if experts else None
+</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="teams">8. Teams Bot (@Hive)</h2>
+
+<h3>8.1 Setup</h3>
+<pre><code># Requirements:
+# 1. Azure Bot registration (Azure Portal → Bot Services)
+# 2. Teams app manifest (manifest.json)
+# 3. Bot Framework SDK: pip install botbuilder-core botbuilder-integration-aiohttp
+
+# manifest.json (Teams App)
+{
+    "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
+    "manifestVersion": "1.16",
+    "version": "1.0.0",
+    "id": "{{BOT_APP_ID}}",
+    "name": { "short": "Hive", "full": "Hive — Team Knowledge Agent" },
+    "description": {
+        "short": "Ask Hive anything about your team's work",
+        "full": "Hive absorbs your team's work trail and answers questions with sourced evidence."
+    },
+    "bots": [{
+        "botId": "{{BOT_APP_ID}}",
+        "scopes": ["personal", "team", "groupChat"],
+        "commandLists": [{
+            "scopes": ["personal", "team"],
+            "commands": [
+                { "title": "ask", "description": "Ask Hive a question" },
+                { "title": "status", "description": "Get team/person status" },
+                { "title": "who-knows", "description": "Find an expert on a topic" },
+                { "title": "kr", "description": "Raise a Knowledge Request" }
+            ]
+        }]
+    }],
+    "permissions": ["identity", "messageTeamMembers"]
+}
+</code></pre>
+
+<h3>8.2 Bot Message Handler</h3>
+<pre><code>from botbuilder.core import TurnContext, ActivityHandler
+from botbuilder.schema import Activity, Attachment
+
+class HiveBot(ActivityHandler):
+
+    async def on_message_activity(self, turn_context: TurnContext):
+        text = turn_context.activity.text.strip()
+        user_id = turn_context.activity.from_property.aad_object_id
+
+        # Remove @Hive mention
+        text = remove_mention(text, "Hive")
+
+        # Route to handler
+        if text.lower().startswith("kr ") or text.lower().startswith("knowledge request"):
+            await self.handle_kr(turn_context, text, user_id)
+        elif text.lower().startswith("who knows") or text.lower().startswith("who-knows"):
+            await self.handle_who_knows(turn_context, text, user_id)
+        elif text.lower().startswith("status"):
+            await self.handle_status(turn_context, text, user_id)
+        else:
+            await self.handle_query(turn_context, text, user_id)
+
+    async def handle_query(self, ctx: TurnContext, query: str, user_id: str):
+        """General Q&A — the main interaction."""
+        # Show typing indicator
+        await ctx.send_activity(Activity(type="typing"))
+
+        # Get answer from knowledge engine
+        team_id = await get_user_team(user_id)
+        result = await answer_query(query, user_id, team_id)
+
+        # Build Adaptive Card response
+        card = build_answer_card(
+            question=query,
+            answer=result.answer,
+            sources=result.sources,
+            has_gap=result.has_gap,
+        )
+        await ctx.send_activity(Activity(
+            type="message",
+            attachments=[Attachment(
+                content_type="application/vnd.microsoft.card.adaptive",
+                content=card,
+            )]
+        ))
+
+    async def handle_who_knows(self, ctx: TurnContext, text: str, user_id: str):
+        """Find experts on a topic."""
+        topic = text.replace("who knows", "").replace("who-knows", "").strip(" ?")
+        experts = await find_experts(topic, limit=5)
+
+        card = build_expertise_card(topic, experts)
+        await ctx.send_activity(Activity(
+            type="message",
+            attachments=[Attachment(
+                content_type="application/vnd.microsoft.card.adaptive",
+                content=card,
+            )]
+        ))
+
+    async def handle_kr(self, ctx: TurnContext, text: str, user_id: str):
+        """Raise a Knowledge Request."""
+        question = text.replace("kr ", "").replace("knowledge request ", "").strip()
+        kr = await handle_knowledge_gap(question, user_id)
+
+        card = build_kr_submitted_card(kr)
+        await ctx.send_activity(Activity(
+            type="message",
+            attachments=[Attachment(
+                content_type="application/vnd.microsoft.card.adaptive",
+                content=card,
+            )]
+        ))
+
+    async def handle_status(self, ctx: TurnContext, text: str, user_id: str):
+        """Get status for a person or team."""
+        # Parse "status @PersonName" or "status team"
+        target = text.replace("status", "").strip()
+        team_id = await get_user_team(user_id)
+
+        if not target or target == "team":
+            statuses = await get_team_status(team_id)
+            card = build_team_status_card(statuses)
+        else:
+            person = await resolve_person_from_name(target, team_id)
+            status = await get_person_status(person.id)
+            card = build_person_status_card(status)
+
+        await ctx.send_activity(Activity(
+            type="message",
+            attachments=[Attachment(
+                content_type="application/vnd.microsoft.card.adaptive",
+                content=card,
+            )]
+        ))
+</code></pre>
+
+<h3>8.3 Adaptive Cards (Teams UI)</h3>
+<pre><code># Example: Answer card with sources
+def build_answer_card(question: str, answer: str, sources: list, has_gap: bool) -> dict:
+    card = {
+        "type": "AdaptiveCard",
+        "version": "1.5",
+        "body": [
+            {
+                "type": "TextBlock",
+                "text": f"🐝 **Hive**",
+                "weight": "Bolder",
+                "size": "Small",
+                "color": "Warning"
+            },
+            {
+                "type": "TextBlock",
+                "text": answer,
+                "wrap": True,
+                "size": "Default"
+            },
+            {
+                "type": "FactSet",
+                "facts": [
+                    {"title": "Source", "value": s["title"][:50]}
+                    for s in sources[:4]
+                ],
+                "separator": True
+            }
+        ]
+    }
+
+    if has_gap:
+        card["body"].append({
+            "type": "ActionSet",
+            "actions": [{
+                "type": "Action.Submit",
+                "title": "🔔 Raise Knowledge Request",
+                "data": {"action": "create_kr", "question": question}
+            }]
+        })
+
+    return card
+
+
+# Example: Knowledge Request notification to expert
+def build_kr_card(kr, requester) -> dict:
+    return {
+        "type": "AdaptiveCard",
+        "version": "1.5",
+        "body": [
+            {
+                "type": "TextBlock",
+                "text": "🐝 **Knowledge Request**",
+                "weight": "Bolder",
+                "color": "Warning"
+            },
+            {
+                "type": "TextBlock",
+                "text": f"**{requester.display_name}** needs your expertise:",
+                "wrap": True
+            },
+            {
+                "type": "TextBlock",
+                "text": f"_{kr.question}_",
+                "wrap": True,
+                "isSubtle": True
+            },
+            {
+                "type": "Input.Text",
+                "id": "answer",
+                "placeholder": "Type your answer here...",
+                "isMultiline": True
+            }
+        ],
+        "actions": [{
+            "type": "Action.Submit",
+            "title": "Submit Answer",
+            "data": {"action": "answer_kr", "kr_id": str(kr.id)}
+        }]
+    }
+
+
+# Example: Proactive dependency routing card
+def build_dependency_card(task, experts, related_artifacts) -> dict:
+    expert_facts = [
+        {"title": e.person_name, "value": f"{e.evidence_count} artifacts on {e.topic}"}
+        for e in experts
+    ]
+    return {
+        "type": "AdaptiveCard",
+        "version": "1.5",
+        "body": [
+            {
+                "type": "TextBlock",
+                "text": "🐝 **Hive — Context for your new task**",
+                "weight": "Bolder",
+                "color": "Warning"
+            },
+            {
+                "type": "TextBlock",
+                "text": f"**{task.title}**",
+                "wrap": True,
+                "size": "Medium"
+            },
+            {
+                "type": "TextBlock",
+                "text": "People who've worked on related areas:",
+                "wrap": True,
+                "isSubtle": True
+            },
+            {
+                "type": "FactSet",
+                "facts": expert_facts
+            },
+            {
+                "type": "TextBlock",
+                "text": "Recent related work:",
+                "wrap": True,
+                "isSubtle": True,
+                "separator": True
+            },
+            *[{
+                "type": "TextBlock",
+                "text": f"• {a.title} ({a.artifact_type}, {a.occurred_at.strftime('%b %d')})",
+                "wrap": True,
+                "size": "Small"
+            } for a in related_artifacts[:3]]
+        ],
+        "actions": [{
+            "type": "Action.Submit",
+            "title": "Connect me with them",
+            "data": {"action": "connect", "expert_ids": [str(e.person_id) for e in experts]}
+        }]
+    }
+</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="dash">9. Manager Dashboard (Web App)</h2>
+
+<h3>9.1 Pages & Routes</h3>
+<table>
+<tr><th>Route</th><th>Page</th><th>Content</th></tr>
+<tr><td><code>/</code></td><td>Team Pulse</td><td>Overview: % on track, activity bars, blocker count, recent highlights</td></tr>
+<tr><td><code>/status</code></td><td>Auto Status</td><td>Per-person weekly status cards with expand-to-evidence</td></tr>
+<tr><td><code>/expertise</code></td><td>Expertise Map</td><td>Interactive topic → people graph, searchable</td></tr>
+<tr><td><code>/knowledge</code></td><td>Knowledge Repo</td><td>Browsable answered KRs, searchable, tagged</td></tr>
+<tr><td><code>/knowledge/gaps</code></td><td>Gap Analytics</td><td>Unanswered KRs, most-requested topics, bus-factor alerts</td></tr>
+<tr><td><code>/settings</code></td><td>Settings</td><td>Team members, connected repos, ingestion status, notification prefs</td></tr>
+</table>
+
+<h3>9.2 Key Components</h3>
+<pre><code>// components/TeamPulse.tsx
+interface TeamPulseData {
+  onTrackPercent: number;
+  totalTasks: number;
+  blockedCount: number;
+  staleCount: number;        // no update in 5+ days
+  weeklyActivity: {
+    commits: number;
+    prs: number;
+    tickets: number;
+    emails: number;
+  };
+  highlights: string[];       // top 3 things that happened this week
+  alerts: Alert[];            // blockers, stale items, bus-factor warnings
+}
+
+// components/StatusCard.tsx
+interface StatusCardProps {
+  person: {
+    name: string;
+    avatarUrl: string;
+    role: string;
+  };
+  summary: string;           // LLM-generated 3-5 bullet summary
+  evidence: Evidence[];      // clickable links to source artifacts
+  period: { start: string; end: string };
+  activityLevel: "high" | "normal" | "low" | "flagged";
+}
+
+// components/ExpertiseGraph.tsx
+// Interactive visualization showing:
+// - Nodes = people, sized by total expertise breadth
+// - Edges = shared topics
+// - Click a person → see their topic breakdown
+// - Search a topic → highlight who knows it
+// Use: D3 force graph or Recharts treemap
+
+// components/GapAnalytics.tsx
+interface GapAnalyticsData {
+  openKRs: number;
+  avgResolutionHours: number;
+  topRequestedTopics: { topic: string; count: number }[];
+  busFactor: {
+    person: string;
+    soloTopics: string[];   // topics ONLY this person covers
+    routedKRs: number;      // how many KRs they're handling
+  }[];
+  trendLine: { week: string; newKRs: number; resolved: number }[];
+}
+</code></pre>
+
+<h3>9.3 Dashboard API Calls</h3>
+<pre><code>// lib/api.ts
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
+
+export const api = {
+  // Team pulse
+  getTeamPulse: (teamId: string) =>
+    fetch(`${API_BASE}/api/dashboard/pulse?team_id=${teamId}`).then(r => r.json()),
+
+  // Status reports
+  getTeamStatus: (teamId: string, week?: string) =>
+    fetch(`${API_BASE}/api/status/team/${teamId}?week=${week}`).then(r => r.json()),
+
+  getPersonStatus: (personId: string, week?: string) =>
+    fetch(`${API_BASE}/api/status/person/${personId}?week=${week}`).then(r => r.json()),
+
+  // Expertise
+  searchExpertise: (topic: string) =>
+    fetch(`${API_BASE}/api/expertise/search?topic=${topic}`).then(r => r.json()),
+
+  getExpertiseMap: (teamId: string) =>
+    fetch(`${API_BASE}/api/expertise/map?team_id=${teamId}`).then(r => r.json()),
+
+  // Knowledge requests
+  getKnowledgeRequests: (filters: KRFilters) =>
+    fetch(`${API_BASE}/api/knowledge-requests?${qs(filters)}`).then(r => r.json()),
+
+  getGapAnalytics: (teamId: string) =>
+    fetch(`${API_BASE}/api/knowledge-requests/analytics?team_id=${teamId}`).then(r => r.json()),
+
+  // Query (for dashboard search)
+  askHive: (query: string, teamId: string) =>
+    fetch(`${API_BASE}/api/query`, {
+      method: "POST",
+      body: JSON.stringify({ query, team_id: teamId }),
+    }).then(r => r.json()),
+};
+</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="auth">10. Auth & Permissions</h2>
+
+<pre><code># Azure AD (Entra ID) integration
+# Everyone at LevelShift already has Azure AD accounts
+
+# 1. Register Azure AD App
+#    - API Permissions: User.Read, Mail.Read, OnlineMeetingTranscript.Read.All,
+#      Team.ReadBasic.All
+#    - Redirect URI: https://hive.levelshift.com/auth/callback
+
+# 2. Role-based access
+ROLES = {
+    "member": {
+        "can_query": True,          # Ask questions (scoped to own team)
+        "can_query_org": True,      # Search org knowledge repo
+        "can_create_kr": True,      # Raise knowledge requests
+        "can_answer_kr": True,      # Answer routed KRs
+        "can_view_own_status": True,
+        "can_view_team_status": False,
+        "can_view_dashboard": False,
+        "can_view_gap_analytics": False,
+    },
+    "manager": {
+        "can_query": True,
+        "can_query_org": True,
+        "can_create_kr": True,
+        "can_answer_kr": True,
+        "can_view_own_status": True,
+        "can_view_team_status": True,   # See all team members' statuses
+        "can_view_dashboard": True,     # Full dashboard access
+        "can_view_gap_analytics": True, # Knowledge gap analytics
+    },
+    "admin": {
+        # Everything above plus:
+        "can_manage_teams": True,
+        "can_manage_connectors": True,
+        "can_view_audit_log": True,
+        "can_configure_ingestion": True,
+    },
+}
+
+# 3. Scope enforcement
+# Every query carries user_id → resolved to team_id + role
+# Members can only query within their team's artifacts
+# Org knowledge repo is queryable by everyone
+# Dashboard is manager+ only
+# Nobody can see "up" — a member can't see their manager's email threads
+</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="privacy">11. Privacy & Guardrails</h2>
+
+<div class="box warn">
+<p><strong>Non-negotiable principles:</strong></p>
+<ul>
+<li><strong>Read-only.</strong> Hive never writes to any external system. No emails sent, no tickets updated, no code pushed.</li>
+<li><strong>No personal surveillance.</strong> No keystroke logging, no screen monitoring, no "productivity scores." Work artifacts only.</li>
+<li><strong>Scoped access.</strong> Members see their team. Managers see their team. Nobody sees up.</li>
+<li><strong>Full audit trail.</strong> Every query logged — who asked what, when, via which surface.</li>
+<li><strong>Data stays internal.</strong> If using cloud LLM APIs, use Azure OpenAI Service or Anthropic's enterprise tier with data processing agreements. For maximum security, self-host Mistral.</li>
+</ul>
+</div>
+
+<h3>Data retention</h3>
+<pre><code># Configurable per deployment
+RETENTION_POLICY = {
+    "work_artifacts": "365 days",    # keep 1 year of work trail
+    "embeddings": "365 days",        # mirror artifact retention
+    "query_log": "90 days",          # audit trail
+    "status_reports": "forever",     # lightweight, useful historically
+    "knowledge_repo": "forever",     # the whole point is permanence
+    "knowledge_requests": "forever", # with answers, part of the repo
+}
+</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="deploy">12. Deployment & Infrastructure</h2>
+
+<h3>Docker Compose (Development)</h3>
+<pre><code># docker-compose.yml
+version: "3.9"
+services:
+  api:
+    build: ./backend
+    ports: ["8000:8000"]
+    env_file: .env
+    depends_on: [postgres, redis, chromadb]
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+
+  bot:
+    build: ./backend
+    ports: ["3978:3978"]
+    env_file: .env
+    depends_on: [api]
+    command: python bot/app.py
+
+  worker:
+    build: ./backend
+    env_file: .env
+    depends_on: [postgres, redis, chromadb]
+    command: celery -A workers.celery_app worker --loglevel=info
+
+  scheduler:
+    build: ./backend
+    env_file: .env
+    depends_on: [redis]
+    command: celery -A workers.celery_app beat --loglevel=info
+
+  dashboard:
+    build: ./dashboard
+    ports: ["3000:3000"]
+    env_file: .env
+    depends_on: [api]
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: hive
+      POSTGRES_USER: hive
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    ports: ["5432:5432"]
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+  chromadb:
+    image: chromadb/chroma:latest
+    ports: ["8001:8000"]
+    volumes: [chromadata:/chroma/chroma]
+
+volumes:
+  pgdata:
+  chromadata:
+</code></pre>
+
+<h3>Environment Variables</h3>
+<pre><code># .env.example
+
+# Database
+DATABASE_URL=postgresql://hive:password@postgres:5432/hive
+
+# Redis
+REDIS_URL=redis://redis:6379/0
+
+# ChromaDB
+CHROMA_URL=http://chromadb:8001
+
+# Azure AD
+AZURE_AD_TENANT_ID=your-tenant-id
+AZURE_AD_CLIENT_ID=your-client-id
+AZURE_AD_CLIENT_SECRET=your-client-secret
+
+# Bot Framework
+BOT_APP_ID=your-bot-app-id
+BOT_APP_PASSWORD=your-bot-app-password
+
+# Azure DevOps
+ADO_ORG=your-org
+ADO_PROJECT=your-project
+ADO_PAT=your-personal-access-token
+
+# LLM
+LLM_PROVIDER=mistral  # or 'claude' or 'azure_openai'
+LLM_API_KEY=your-api-key
+LLM_MODEL=mistral-large-latest
+
+# Embedding
+EMBEDDING_MODEL=all-MiniLM-L6-v2  # local model name
+
+# Hive Mailbox
+HIVE_MAILBOX=hive@levelshift.com
+
+# Ingestion schedule (cron)
+INGEST_INTERVAL_MINUTES=10
+</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="plan">13. Phased Build Plan</h2>
+
+<div class="phase">
+<p class="num">Phase 1 — Foundation (Weeks 1–3)</p>
+<h3>Goal: Core pipeline working end-to-end with one data source</h3>
+<ul>
+<li>Set up project structure, Docker Compose, PostgreSQL, ChromaDB, Redis</li>
+<li>Build the <code>work_artifacts</code> schema and Alembic migrations</li>
+<li>Build the Git connector first (simplest API, richest signal)</li>
+<li>Build normalizer + embedder pipeline</li>
+<li>Build basic query engine (embed query → retrieve chunks → LLM answer)</li>
+<li>Build a CLI interface for testing queries: <code>python -m hive.cli "who worked on auth?"</code></li>
+<li><strong>Milestone:</strong> Ask a question about Git commits and get a sourced answer</li>
+</ul>
+</div>
+
+<div class="phase">
+<p class="num">Phase 2 — Teams Bot (Weeks 4–5)</p>
+<h3>Goal: @Hive is live in Teams, answering questions from Git data</h3>
+<ul>
+<li>Register Azure Bot, create Teams app manifest</li>
+<li>Build bot message handler with query routing</li>
+<li>Build Adaptive Cards for answers, sources, and "raise KR" button</li>
+<li>Deploy bot to Azure (or ngrok for dev tunnel)</li>
+<li>Sideload app in Teams for testing</li>
+<li><strong>Milestone:</strong> Type <code>@Hive who wrote the most commits this week?</code> in Teams and get an answer</li>
+</ul>
+</div>
+
+<div class="phase">
+<p class="num">Phase 3 — Task Connector + Status Generator (Weeks 6–7)</p>
+<h3>Goal: Azure DevOps data flowing in, auto-statuses generating</h3>
+<ul>
+<li>Build Azure DevOps work item connector (pull + webhook)</li>
+<li>Build status generator — weekly per-person summaries from commits + tickets</li>
+<li>Add <code>status</code> command to Teams bot</li>
+<li>Build expertise scorer (compute topic scores from artifact history)</li>
+<li>Add <code>who-knows</code> command to Teams bot</li>
+<li><strong>Milestone:</strong> Auto-generated weekly status for each team member, viewable in Teams</li>
+</ul>
+</div>
+
+<div class="phase">
+<p class="num">Phase 4 — Knowledge Request Framework (Weeks 8–9)</p>
+<h3>Goal: KR loop working — gap → route → answer → indexed</h3>
+<ul>
+<li>Build knowledge_requests table and API</li>
+<li>Build gap detection (when query engine can't answer → offer KR)</li>
+<li>Build expert routing logic (expertise scores + load balancing)</li>
+<li>Build KR Adaptive Cards (submit, notify expert, answer form, confirmation)</li>
+<li>Build knowledge repo indexing (answered KR → vector DB)</li>
+<li>Test full loop: ask → gap → route → expert answers → next person gets instant answer</li>
+<li><strong>Milestone:</strong> Complete KR lifecycle working in Teams</li>
+</ul>
+</div>
+
+<div class="phase">
+<p class="num">Phase 5 — Email + Call Connectors (Weeks 10–12)</p>
+<h3>Goal: All four data streams flowing into Hive</h3>
+<ul>
+<li>Set up shared Hive mailbox, configure Graph API mail permissions</li>
+<li>Build email connector with webhook subscriptions</li>
+<li>Build call/meeting transcript connector (or manual upload fallback)</li>
+<li>Enrich query engine with email + meeting context</li>
+<li>Build proactive dependency routing (task assigned → surface related experts)</li>
+<li><strong>Milestone:</strong> Hive answers questions drawing from all four data streams</li>
+</ul>
+</div>
+
+<div class="phase">
+<p class="num">Phase 6 — Manager Dashboard (Weeks 13–16)</p>
+<h3>Goal: Full web dashboard live for managers</h3>
+<ul>
+<li>Set up Next.js project with Azure AD auth (MSAL)</li>
+<li>Build Team Pulse page (overview, activity bars, alerts)</li>
+<li>Build Status page (per-person cards with evidence drill-down)</li>
+<li>Build Expertise Map page (interactive topic → people graph)</li>
+<li>Build Knowledge Repo browser (search, filter by tag, browse answered KRs)</li>
+<li>Build Gap Analytics page (open KRs, top topics, bus-factor alerts)</li>
+<li>Build Settings page (team config, connector status, notification prefs)</li>
+<li><strong>Milestone:</strong> Manager logs in and sees full team picture without opening any other tool</li>
+</ul>
+</div>
+
+<div class="phase">
+<p class="num">Phase 7 — Production Hardening (Weeks 17–20)</p>
+<h3>Goal: Reliable, secure, monitored, ready for real team use</h3>
+<ul>
+<li>Switch ChromaDB → Qdrant for production vector search</li>
+<li>Add monitoring (Prometheus + Grafana or Azure Monitor)</li>
+<li>Add error handling, retry logic, circuit breakers on all connectors</li>
+<li>Add rate limiting on LLM calls with cost tracking</li>
+<li>Security audit — scope enforcement, input sanitization, token rotation</li>
+<li>Load testing with realistic data volumes</li>
+<li>Documentation — setup guide, admin guide, user guide</li>
+<li><strong>Milestone:</strong> Hive running on one real team, stable, monitored, costs tracked</li>
+</ul>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="prompts">14. AI Prompts Library</h2>
+
+<h3>Query System Prompt</h3>
+<pre><code>QUERY_SYSTEM_PROMPT = """You are Hive, an internal knowledge agent for a team at LevelShift.
+You answer questions using ONLY the provided context from the team's work trail
+(emails, meeting transcripts, Azure DevOps tickets, Git commits, and the knowledge repo).
+
+Rules:
+1. ONLY use information from the provided context. Never make up information.
+2. CITE every claim with the source: commit SHA, ticket ID (e.g. DEVOPS-312),
+   PR number, email subject, meeting date, or Knowledge Request ID.
+3. Name specific people when relevant — "Nivas authored this", not "someone did this".
+4. If the context doesn't contain the answer, say so clearly and offer to raise
+   a Knowledge Request to find someone who knows.
+5. Be concise — managers and engineers are busy. Lead with the answer.
+6. For "who" questions, list the person with the strongest evidence first.
+7. Never reveal email content beyond what's needed to answer the question.
+8. Never speculate about people's motivations, productivity, or performance.
+"""
+</code></pre>
+
+<h3>Status Generator Prompt</h3>
+<pre><code>STATUS_SYSTEM_PROMPT = """You are Hive's status report generator. Given a person's work
+artifacts for the week (commits, PRs, tickets, emails, meetings), generate a concise
+weekly status update.
+
+Format:
+- 3-5 bullet points maximum
+- Lead with COMPLETED work (merged PRs, closed tickets, shipped features)
+- Then IN-PROGRESS work (open PRs, active tickets)
+- End with BLOCKERS (items stuck 3+ days, unresolved dependencies)
+- Every bullet must reference a specific artifact (commit SHA, ticket ID, PR #)
+
+Rules:
+- Facts only. No praise, no filler, no "great work this week."
+- If someone had very few artifacts, say so neutrally — don't inflate.
+- Flag anything blocked for 3+ business days.
+- Flag tickets with no commits or updates for 5+ days as "stale."
+- Keep each bullet under 20 words.
+"""
+</code></pre>
+
+<h3>Expertise Extraction Prompt</h3>
+<pre><code>TOPIC_EXTRACTION_PROMPT = """Extract 2-5 technical topics from this work artifact.
+Topics should be specific technologies, services, or domain areas — not generic words.
+
+Good: "salesforce-rest-api", "jwt-token-refresh", "react-dashboard", "billing-service"
+Bad: "code", "work", "update", "fix"
+
+Return ONLY a JSON array of topic strings, nothing else.
+Example: ["azure-devops-api", "celery-task-queue", "postgresql-migrations"]
+"""
+</code></pre>
+
+<h3>Knowledge Request Routing Prompt</h3>
+<pre><code>KR_ROUTING_PROMPT = """Given this Knowledge Request and the list of potential experts
+(with their expertise scores and recent work), recommend the best person to route it to.
+
+Consider:
+1. Expertise relevance (highest score on the topic)
+2. Recency (worked on it recently = more likely to remember)
+3. Load (fewer open KRs = more available)
+
+Return JSON: {"recommended_person_id": "...", "reason": "..."}
+"""
+</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="api">15. API Reference</h2>
+
+<h3>REST API Endpoints</h3>
+<table>
+<tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Auth</th></tr>
+<tr><td>POST</td><td><code>/api/query</code></td><td>Ask Hive a question</td><td>member+</td></tr>
+<tr><td>GET</td><td><code>/api/status/team/:teamId</code></td><td>Get team's weekly statuses</td><td>manager+</td></tr>
+<tr><td>GET</td><td><code>/api/status/person/:personId</code></td><td>Get person's weekly status</td><td>self or manager</td></tr>
+<tr><td>GET</td><td><code>/api/expertise/search?topic=X</code></td><td>Find experts on a topic</td><td>member+</td></tr>
+<tr><td>GET</td><td><code>/api/expertise/map?team_id=X</code></td><td>Full expertise graph for team</td><td>manager+</td></tr>
+<tr><td>GET</td><td><code>/api/expertise/person/:personId</code></td><td>Person's expertise profile</td><td>self or manager</td></tr>
+<tr><td>POST</td><td><code>/api/knowledge-requests</code></td><td>Create a Knowledge Request</td><td>member+</td></tr>
+<tr><td>GET</td><td><code>/api/knowledge-requests</code></td><td>List KRs (filtered)</td><td>member+</td></tr>
+<tr><td>PUT</td><td><code>/api/knowledge-requests/:id/answer</code></td><td>Answer a KR</td><td>routed expert</td></tr>
+<tr><td>GET</td><td><code>/api/knowledge-requests/analytics</code></td><td>Gap analytics</td><td>manager+</td></tr>
+<tr><td>GET</td><td><code>/api/dashboard/pulse?team_id=X</code></td><td>Team pulse overview</td><td>manager+</td></tr>
+<tr><td>GET</td><td><code>/api/dashboard/activity?team_id=X</code></td><td>Activity breakdown</td><td>manager+</td></tr>
+<tr><td>POST</td><td><code>/webhooks/email</code></td><td>Graph API email webhook</td><td>webhook secret</td></tr>
+<tr><td>POST</td><td><code>/webhooks/ado</code></td><td>Azure DevOps service hook</td><td>webhook secret</td></tr>
+<tr><td>POST</td><td><code>/webhooks/git</code></td><td>Git push/PR webhook</td><td>webhook secret</td></tr>
+<tr><td>GET</td><td><code>/api/admin/ingestion-status</code></td><td>Connector health & last sync</td><td>admin</td></tr>
+<tr><td>GET</td><td><code>/api/admin/audit-log</code></td><td>Query audit trail</td><td>admin</td></tr>
+</table>
+
+<h3>Query Request/Response</h3>
+<pre><code>// POST /api/query
+// Request:
+{
+    "query": "Who's worked on the billing API recently?",
+    "team_id": "uuid-of-team",
+    "scope": "team"  // "team" | "org"
+}
+
+// Response:
+{
+    "answer": "Deepa V. has the most recent work on the billing API — she authored PR #312 (billing auth layer) merged on March 15 and PR #318 (rate limiting) merged on March 22. Arjun M. also touched the billing service in commit abc1234 on April 3 for a bug fix.",
+    "sources": [
+        {
+            "artifact_id": "uuid",
+            "type": "pull_request",
+            "title": "PR #312: Billing auth layer",
+            "author": "Deepa V.",
+            "date": "2026-03-15",
+            "relevance": 0.94
+        },
+        {
+            "artifact_id": "uuid",
+            "type": "commit",
+            "title": "fix: billing service null check",
+            "author": "Arjun M.",
+            "date": "2026-04-03",
+            "relevance": 0.78
+        }
+    ],
+    "has_gap": false,
+    "latency_ms": 1240
+}
+</code></pre>
+
+<hr>
+
+<div class="box success">
+<h3>Quick Start — First Session</h3>
+<ol>
+<li><code>git init hive && cd hive</code></li>
+<li>Copy the project structure from Section 3</li>
+<li><code>docker-compose up postgres redis chromadb</code></li>
+<li>Build the Git connector first (Section 5.4)</li>
+<li>Build the normalizer + embedder (Section 5.5)</li>
+<li>Build the query engine (Section 6.1)</li>
+<li>Test with CLI: <code>python -m hive.cli "who committed to the auth module?"</code></li>
+<li>Once that works → move to Phase 2 (Teams bot)</li>
+</ol>
+</div>
+
+<footer style="margin-top:60px;padding-top:20px;border-top:1px solid var(--border);font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.25);display:flex;justify-content:space-between">
+<span>Hive Technical Blueprint v1.0</span>
+<span>Nivas · LevelShift · August 2026</span>
+</footer>
+
+</div>
+</body>
+</html>

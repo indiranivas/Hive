@@ -1,0 +1,59 @@
+{
+    "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
+    "manifestVersion": "1.16",
+    "version": "1.0.0",
+    "id": "${{BOT_APP_ID}}",
+    "packageName": "com.levelshift.hive",
+    "developer": {
+        "name": "LevelShift",
+        "websiteUrl": "https://levelshift.com",
+        "privacyUrl": "https://levelshift.com/privacy",
+        "termsOfUseUrl": "https://levelshift.com/terms"
+    },
+    "icons": {
+        "color": "color.png",
+        "outline": "outline.png"
+    },
+    "name": {
+        "short": "Hive",
+        "full": "Hive - Team Knowledge Agent"
+    },
+    "description": {
+        "short": "Ask Hive anything about your team's work",
+        "full": "Hive absorbs your team's work trail - commits, pull requests, tickets, email and meetings - and answers questions with sourced evidence. Read-only: Hive never posts, commits or emails on your behalf."
+    },
+    "accentColor": "#F2B01E",
+    "bots": [
+        {
+            "botId": "${{BOT_APP_ID}}",
+            "scopes": ["personal", "team", "groupChat"],
+            "supportsFiles": false,
+            "isNotificationOnly": false,
+            "commandLists": [
+                {
+                    "scopes": ["personal", "team", "groupChat"],
+                    "commands": [
+                        {
+                            "title": "ask",
+                            "description": "Ask a question about the team's work"
+                        },
+                        {
+                            "title": "who knows",
+                            "description": "Find who has evidence on a topic"
+                        },
+                        {
+                            "title": "kr",
+                            "description": "Raise a Knowledge Request"
+                        },
+                        {
+                            "title": "help",
+                            "description": "Show what Hive can do"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "permissions": ["identity", "messageTeamMembers"],
+    "validDomains": []
+}

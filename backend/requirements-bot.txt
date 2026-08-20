@@ -1,0 +1,9 @@
+# Teams bot transport (bot/app.py) only. The API, workers and CLI do not need these.
+# Verified on Python 3.14 with botbuilder-core 4.17.1. The Docker image pins 3.12 for
+# reproducibility, not because newer is unsupported.
+# Windows: deep paths can trip the 260-char limit during install -- enable long paths
+# or use a venv in a short directory. See docs/TEAMS-SETUP.md.
+-r requirements.txt
+botbuilder-core>=4.16
+botbuilder-integration-aiohttp>=4.16
+aiohttp>=3.9
