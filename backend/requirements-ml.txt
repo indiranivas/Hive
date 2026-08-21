@@ -1,6 +1,4 @@
-# Optional, heavy. Only needed for local semantic embeddings or ChromaDB.
+# Optional, heavy. Only needed for local semantic embeddings.
 #   EMBEDDING_PROVIDER=sentence-transformers  (pulls torch, ~2 GB)
-#   VECTOR_PROVIDER=chroma
 -r requirements.txt
 sentence-transformers>=3.0
-chromadb>=0.5

@@ -119,7 +119,9 @@ card offers a **Raise a Knowledge Request** button that records the gap.
 cd backend && python -m pytest
 ```
 
-156 tests cover chunking, embeddings, the vector store, git parsing, ingestion idempotency,
+155 tests cover chunking, embeddings, both vector stores (the Chroma tests assert cosine
+scoring and metadata sanitizing, and skip themselves unless chromadb is installed), git
+parsing, ingestion idempotency,
 expertise decay, retrieval scoping, the API's permission gates, the bot's parsing, dispatch, cards
 and identity mapping, the Azure OpenAI request format (asserted against a mock transport, so the
 deployment path, api-version, auth header and token-parameter switch are covered without a live
@@ -134,7 +136,7 @@ request; answer it in the repo; re-ask and get the repo's answer.
 Six of those cover `bot/app.py`, the Bot Framework transport, using a recording adapter in place
 of the channel — a card comes back for a question, the conversation reference is stored, a card
 action round-trips, and a dispatch failure apologises in-channel instead of returning a 500. They
-need the SDK, so `python -m pytest` reports **150 passed, 1 skipped** without it and **156 passed**
+need the SDK, so `python -m pytest` reports **149 passed, 1 skipped** without it and **155 passed**
 once `requirements-bot.txt` is installed.
 
 ## Orchestration: two LangGraph state machines
@@ -178,37 +180,39 @@ Set `RETRIEVAL_MODE=linear` to bypass the retrieval graph entirely.
 
 Swap providers with environment variables — no code changes:
 
+The whole stack is open source — FastAPI, SQLAlchemy, Celery, Redis, LangGraph, SQLite/Postgres,
+Chroma, sentence-transformers, Next.js — with **one deliberate exception: the LLM runs on Azure
+OpenAI**, inside the tenant.
+
 | Concern | Dev default | Production |
 | --- | --- | --- |
-| Database | SQLite (`backend/.data/hive.db`) | `DATABASE_URL=postgresql+psycopg://…` |
-| Embeddings | `hashing` (lexical, offline) | `EMBEDDING_PROVIDER=azure_openai` + `EMBEDDING_DIM=1536` |
-| Vector store | `sql` (embeddings in Postgres, scanned in Python) | `VECTOR_PROVIDER=chroma` → Qdrant in Phase 7 |
+| Database | SQLite (`backend/.data/hive.db`) | `DATABASE_URL=postgresql+psycopg://…` (PostgreSQL) |
+| Embeddings | `hashing` (lexical, offline) | `EMBEDDING_PROVIDER=sentence-transformers` (local models, no egress) |
+| Vector store | `VECTOR_PROVIDER=chroma` (local persistent ChromaDB) | `chroma` (embedded or `CHROMA_URL` server) → Qdrant in Phase 7 |
+| Knowledge graph | `memory` (derived from SQL on demand) | `GRAPH_PROVIDER=neo4j` + `NEO4J_*` (Community Edition or AuraDB) |
 | LLM | `stub` (extractive, no key) | `LLM_PROVIDER=azure_openai` + endpoint/deployment |
 | Auth | `dev` (single local admin) | `AUTH_MODE=azure_ad` + tenant/client IDs |
 | Teams bot | `hive.cli bot` (no SDK) | `requirements-bot.txt` + `BOT_APP_ID`/`BOT_APP_PASSWORD` |
 
 ```bash
-cp .env.example .env      # set DB_PASSWORD, LLM_API_KEY, git sources
+cp .env.example .env      # set DB_PASSWORD, the Azure OpenAI values, git sources
 docker compose up --build
 docker compose exec api alembic upgrade head
 ```
 
-### Azure OpenAI
-
-Production runs the LLM **and** the embeddings on Azure OpenAI, so no team content leaves the
-tenant:
+### Azure OpenAI (the LLM — the only non-open-source component)
 
 ```bash
 LLM_PROVIDER=azure_openai
-EMBEDDING_PROVIDER=azure_openai
-EMBEDDING_DIM=1536                                  # text-embedding-3-small
 AZURE_OPENAI_ENDPOINT=https://<resource>.openai.azure.com
 AZURE_OPENAI_DEPLOYMENT=hive-gpt4o                  # deployment name, not model name
-AZURE_OPENAI_EMBEDDING_DEPLOYMENT=hive-embed-3-small
 AZURE_OPENAI_API_VERSION=2024-10-21                 # pin what your resource supports
 AZURE_OPENAI_AUTH=key                               # or `entra`
 AZURE_OPENAI_API_KEY=...
 ```
+
+Embeddings never call Azure: they stay local (`hashing` or `sentence-transformers`), so the only
+content that leaves the machine is the prompt sent to the tenant's own Azure OpenAI deployment.
 
 Four Azure-specific things the client handles, each of which otherwise shows up as a 400 or 404:
 
@@ -226,9 +230,33 @@ Prefer `AZURE_OPENAI_AUTH=entra` where you can (`pip install azure-identity`): i
 identity or `az login` session, so there is no key in `.env`, and many tenants disable local key
 auth on Cognitive Services anyway. Tokens are cached until just before expiry.
 
+### Knowledge graph (open source)
+
+`/api/graph/*` answers the multi-hop questions vector search cannot: `overview` and
+`neighborhood` return nodes+edges for visualisation, `collaborators` finds people who share
+repos and topics with someone, and `bus-factor` lists topics that rest on a single expert.
+The graph — `(Person)-[KNOWS]->(Topic)`, `(Person)-[WORKED_IN]->(Repo)`,
+`(Person)-[ASKED|ANSWERED]->(KR)-[TAGGED]->(Topic)` — is derived entirely from the
+relational tables, so it needs no separate ingestion.
+
+`GRAPH_PROVIDER=memory` (default) derives it on demand: no service, never stale. `neo4j`
+mirrors it into Neo4j — Community Edition via `bolt://`, or AuraDB via `neo4j+s://`; use the
+`https://` URI form to go over Aura's Query API on port 443 where a firewall blocks Bolt
+(corporate networks commonly do). `POST /api/graph/sync` rebuilds the mirror after ingestion.
+
+### Local semantic embeddings (open source)
+
+```bash
+pip install -r requirements-ml.txt        # sentence-transformers (pulls torch) + chromadb
+EMBEDDING_PROVIDER=sentence-transformers
+EMBEDDING_MODEL=all-MiniLM-L6-v2          # or bge-large-en-v1.5 (EMBEDDING_DIM=1024)
+EMBEDDING_DIM=384
+```
+
 Changing `EMBEDDING_PROVIDER` or `EMBEDDING_DIM` invalidates existing vectors — old and new
 embeddings are not comparable. Re-ingest, or delete `vector_chunks` and let the connectors
-refill it.
+refill it. `RETRIEVAL_MIN_SCORE` is calibrated for the hashing embedder; re-tune it after
+switching to a semantic one.
 
 ## Layout
 

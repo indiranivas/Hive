@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 
 from api.core.db import get_db
 from api.core.security import require
-from api.models.orm import IngestionState, Person, QueryLog, VectorChunk, WorkArtifact
+from api.core.vectorstore import ARTIFACT_COLLECTION, KNOWLEDGE_COLLECTION, get_vector_store
+from api.models.orm import IngestionState, Person, QueryLog, WorkArtifact
 from api.models.schemas import (
     AuditLogEntry,
     ConnectorStatus,
@@ -39,7 +40,12 @@ def ingestion_status(
             for state in states
         ],
         artifact_count=db.execute(select(func.count(WorkArtifact.id))).scalar_one(),
-        chunk_count=db.execute(select(func.count(VectorChunk.id))).scalar_one(),
+        # Ask the active vector store, not the SQL table -- with Chroma the
+        # vector_chunks table is empty and a raw count would always read 0.
+        chunk_count=(
+            get_vector_store().count(db, ARTIFACT_COLLECTION)
+            + get_vector_store().count(db, KNOWLEDGE_COLLECTION)
+        ),
         people_count=db.execute(select(func.count(Person.id))).scalar_one(),
     )
 

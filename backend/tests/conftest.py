@@ -15,6 +15,8 @@ os.environ.update(
         "LLM_PROVIDER": "stub",
         "EMBEDDING_PROVIDER": "hashing",
         "VECTOR_PROVIDER": "sql",
+        "GRAPH_PROVIDER": "memory",
+        "NEO4J_PASSWORD": "",
         "GIT_LOCAL_REPOS": "",
         "ADO_ORG": "",
         "GITHUB_REPOS": "",

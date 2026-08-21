@@ -131,6 +131,17 @@ class SqlVectorStore(VectorStore):
         )
 
 
+def _chroma_safe(metadata: dict[str, Any]) -> dict[str, Any]:
+    """Chroma only accepts str/int/float/bool metadata values; Hive callers may
+    pass None (unknown author, no team). Drop those -- a missing key behaves the
+    same as None in both stores' `where` filters."""
+    return {
+        key: value if isinstance(value, (str, int, float, bool)) else str(value)
+        for key, value in metadata.items()
+        if value is not None
+    }
+
+
 class ChromaVectorStore(VectorStore):  # pragma: no cover - optional dependency
     def __init__(self) -> None:
         try:
@@ -149,7 +160,12 @@ class ChromaVectorStore(VectorStore):  # pragma: no cover - optional dependency
             self._client = chromadb.PersistentClient(path=settings.chroma_path)
 
     def _collection(self, collection: str):
-        return self._client.get_or_create_collection(collection)
+        # Cosine space, so `score = 1 - distance` is the same cosine similarity
+        # the SQL store computes and RETRIEVAL_MIN_SCORE stays comparable.
+        # (Chroma's default is L2, which would silently break the thresholds.)
+        return self._client.get_or_create_collection(
+            collection, metadata={"hnsw:space": "cosine"}
+        )
 
     def upsert(self, session: Session, collection: str, records: list[VectorRecord]) -> None:
         if not records:
@@ -158,7 +174,10 @@ class ChromaVectorStore(VectorStore):  # pragma: no cover - optional dependency
             ids=[record.id for record in records],
             embeddings=[record.embedding for record in records],
             documents=[record.document for record in records],
-            metadatas=[{**record.metadata, "ref_id": record.ref_id} for record in records],
+            metadatas=[
+                _chroma_safe({**record.metadata, "ref_id": record.ref_id})
+                for record in records
+            ],
         )
 
     def query(

@@ -4,8 +4,9 @@
 extractive, cited answer straight from the retrieved context. It never invents
 prose, which makes it a safe offline stand-in and keeps tests deterministic.
 
-Production at LevelShift is `azure_openai` -- the data stays inside the tenant,
-which is what the blueprint's privacy section requires.
+Production at LevelShift is `azure_openai` -- the only external service in the
+stack. The data stays inside the tenant, which is what the blueprint's privacy
+section requires; everything else in Hive is open source.
 """
 
 from __future__ import annotations
@@ -20,8 +21,6 @@ import httpx
 
 from api.core.azure_auth import build_auth_headers
 from api.core.config import get_settings
-
-DEFAULT_ANTHROPIC_MODEL = "claude-opus-5"
 
 # Deployments whose API rejects `max_tokens` and `temperature` (the reasoning
 # families). Azure returns a 400 rather than ignoring them, so detect by name.
@@ -75,46 +74,9 @@ class StubLLM(LLMClient):
         lines.extend(f"- {title} ({header})" for header, title in entries[:5])
         lines.append(
             "(No LLM configured -- this is a verbatim evidence list, not a synthesized "
-            "answer. Set LLM_PROVIDER and LLM_API_KEY for prose answers.)"
+            "answer. Set LLM_PROVIDER=azure_openai for prose answers.)"
         )
         return LLMResponse(text="\n".join(lines), model=self.model)
-
-
-class MistralLLM(LLMClient):  # pragma: no cover - network
-    URL = "https://api.mistral.ai/v1/chat/completions"
-
-    def __init__(self, api_key: str, model: str, max_tokens: int, temperature: float,
-                 timeout: float) -> None:
-        if not api_key:
-            raise RuntimeError("LLM_PROVIDER=mistral requires LLM_API_KEY")
-        self._api_key = api_key
-        self.model = model
-        self._max_tokens = max_tokens
-        self._temperature = temperature
-        self._timeout = timeout
-
-    def chat(self, system: str, messages: list[dict[str, str]]) -> LLMResponse:
-        payload = {
-            "model": self.model,
-            "max_tokens": self._max_tokens,
-            "temperature": self._temperature,
-            "messages": [{"role": "system", "content": system}, *messages],
-        }
-        with httpx.Client(timeout=self._timeout) as client:
-            response = client.post(
-                self.URL,
-                headers={"Authorization": f"Bearer {self._api_key}"},
-                json=payload,
-            )
-            response.raise_for_status()
-            body = response.json()
-        usage = body.get("usage", {})
-        return LLMResponse(
-            text=body["choices"][0]["message"]["content"],
-            model=self.model,
-            input_tokens=usage.get("prompt_tokens"),
-            output_tokens=usage.get("completion_tokens"),
-        )
 
 
 class AzureOpenAILLM(LLMClient):
@@ -212,50 +174,9 @@ class AzureOpenAILLM(LLMClient):
         )
 
 
-class AnthropicLLM(LLMClient):  # pragma: no cover - network
-    """Official Anthropic SDK. Note: `temperature` is rejected by current Claude
-    models, so LLM_TEMPERATURE is intentionally ignored here."""
-
-    def __init__(self, api_key: str, model: str, max_tokens: int, timeout: float) -> None:
-        try:
-            import anthropic
-        except ImportError as exc:
-            raise RuntimeError("LLM_PROVIDER=anthropic requires `pip install anthropic`") from exc
-        if not api_key:
-            raise RuntimeError("LLM_PROVIDER=anthropic requires LLM_API_KEY")
-        self._client = anthropic.Anthropic(api_key=api_key, timeout=timeout)
-        self.model = model if model.startswith("claude") else DEFAULT_ANTHROPIC_MODEL
-        self._max_tokens = max_tokens
-
-    def chat(self, system: str, messages: list[dict[str, str]]) -> LLMResponse:
-        response = self._client.messages.create(
-            model=self.model,
-            max_tokens=self._max_tokens,
-            system=system,
-            messages=[{"role": m["role"], "content": m["content"]} for m in messages],
-        )
-        if response.stop_reason == "refusal":
-            return LLMResponse(text=NO_ANSWER_MARKER, model=self.model)
-        text = "".join(block.text for block in response.content if block.type == "text")
-        return LLMResponse(
-            text=text,
-            model=self.model,
-            input_tokens=response.usage.input_tokens,
-            output_tokens=response.usage.output_tokens,
-        )
-
-
 @lru_cache
 def get_llm() -> LLMClient:
     settings = get_settings()
-    if settings.llm_provider == "mistral":
-        return MistralLLM(
-            api_key=settings.llm_api_key or "",
-            model=settings.llm_model,
-            max_tokens=settings.llm_max_tokens,
-            temperature=settings.llm_temperature,
-            timeout=settings.llm_timeout_seconds,
-        )
     if settings.llm_provider == "azure_openai":
         return AzureOpenAILLM(
             endpoint=settings.azure_openai_endpoint or "",
@@ -267,12 +188,5 @@ def get_llm() -> LLMClient:
             temperature=settings.llm_temperature,
             timeout=settings.llm_timeout_seconds,
             token_param=settings.azure_openai_token_param,
-        )
-    if settings.llm_provider == "anthropic":
-        return AnthropicLLM(
-            api_key=settings.llm_api_key or "",
-            model=settings.llm_model,
-            max_tokens=settings.llm_max_tokens,
-            timeout=settings.llm_timeout_seconds,
         )
     return StubLLM()

@@ -14,7 +14,6 @@ import httpx
 import pytest
 
 from api.core.azure_auth import build_auth_headers
-from api.core.embeddings import AzureOpenAIEmbedder
 from api.core.llm import NO_ANSWER_MARKER, AzureOpenAILLM
 
 ENDPOINT = "https://levelshift-openai.openai.azure.com"
@@ -170,108 +169,18 @@ def test_missing_endpoint_or_deployment_fails_with_the_env_var_name():
         AzureOpenAILLM(endpoint=ENDPOINT, deployment="", api_version="v")
 
 
-# --- embeddings --------------------------------------------------------------
-
-
-def _embed_body(count: int, dim: int = 4) -> dict:
-    return {
-        "data": [
-            {"index": index, "embedding": [float(index)] * dim} for index in range(count)
-        ],
-        "usage": {"prompt_tokens": 10},
-    }
-
-
-def test_embedder_targets_the_embedding_deployment():
-    capture: list[httpx.Request] = []
-    embedder = AzureOpenAIEmbedder(
-        endpoint=ENDPOINT,
-        deployment="hive-embed-3-small",
-        api_version="2024-10-21",
-        api_key="secret-key",
-        dim=4,
-        client=_client(capture, _embed_body(2)),
-    )
-    vectors = embedder.encode(["one", "two"])
-
-    assert capture[0].url.path == "/openai/deployments/hive-embed-3-small/embeddings"
-    assert json.loads(capture[0].content)["input"] == ["one", "two"]
-    assert vectors == [[0.0] * 4, [1.0] * 4]
-
-
-def test_embedder_sends_dimensions_only_when_asked():
-    capture: list[httpx.Request] = []
-    AzureOpenAIEmbedder(
-        endpoint=ENDPOINT, deployment="d", api_version="v", api_key="k", dim=256,
-        send_dimensions=True, client=_client(capture, _embed_body(1, dim=256)),
-    ).encode(["x"])
-    assert json.loads(capture[0].content)["dimensions"] == 256
-
-    capture.clear()
-    AzureOpenAIEmbedder(
-        endpoint=ENDPOINT, deployment="d", api_version="v", api_key="k", dim=256,
-        client=_client(capture, _embed_body(1, dim=256)),
-    ).encode(["x"])
-    assert "dimensions" not in json.loads(capture[0].content)
-
-
-def test_embedder_batches_large_inputs():
-    capture: list[httpx.Request] = []
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        capture.append(request)
-        count = len(json.loads(request.content)["input"])
-        return httpx.Response(200, json=_embed_body(count))
-
-    embedder = AzureOpenAIEmbedder(
-        endpoint=ENDPOINT, deployment="d", api_version="v", api_key="k", dim=4,
-        client=httpx.Client(transport=httpx.MockTransport(handler)),
-    )
-    vectors = embedder.encode([f"chunk {index}" for index in range(37)])
-
-    assert len(capture) == 3  # 16 + 16 + 5
-    assert len(vectors) == 37
-
-
-def test_embedder_reorders_by_index():
-    """Azure may return embeddings out of order; alignment with chunks matters."""
-    scrambled = {
-        "data": [
-            {"index": 1, "embedding": [1.0]},
-            {"index": 0, "embedding": [0.0]},
-        ]
-    }
-    capture: list[httpx.Request] = []
-    vectors = AzureOpenAIEmbedder(
-        endpoint=ENDPOINT, deployment="d", api_version="v", api_key="k", dim=1,
-        client=_client(capture, scrambled),
-    ).encode(["first", "second"])
-    assert vectors == [[0.0], [1.0]]
-
-
-def test_embedder_no_texts_makes_no_request():
-    capture: list[httpx.Request] = []
-    embedder = AzureOpenAIEmbedder(
-        endpoint=ENDPOINT, deployment="d", api_version="v", api_key="k",
-        client=_client(capture, _embed_body(0)),
-    )
-    assert embedder.encode([]) == []
-    assert capture == []
-
-
 # --- wiring ------------------------------------------------------------------
 
 
-def test_settings_select_the_azure_providers(monkeypatch, tmp_path):
+def test_settings_select_the_azure_llm(monkeypatch, tmp_path):
     from api.core import config, embeddings, llm
 
     monkeypatch.setenv("LLM_PROVIDER", "azure_openai")
-    monkeypatch.setenv("EMBEDDING_PROVIDER", "azure_openai")
     monkeypatch.setenv("AZURE_OPENAI_ENDPOINT", ENDPOINT)
     monkeypatch.setenv("AZURE_OPENAI_API_KEY", "k")
     monkeypatch.setenv("AZURE_OPENAI_DEPLOYMENT", "hive-gpt4o")
-    monkeypatch.setenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT", "hive-embed")
-    monkeypatch.setenv("EMBEDDING_DIM", "1536")
+    # Pin: a developer's .env may set a different api-version.
+    monkeypatch.setenv("AZURE_OPENAI_API_VERSION", "2024-10-21")
     for cached in (config.get_settings, llm.get_llm, embeddings.get_embedder):
         cached.cache_clear()
 
@@ -283,8 +192,8 @@ def test_settings_select_the_azure_providers(monkeypatch, tmp_path):
         assert client.url.endswith(
             "/openai/deployments/hive-gpt4o/chat/completions?api-version=2024-10-21"
         )
-        assert isinstance(embedder, embeddings.AzureOpenAIEmbedder)
-        assert embedder.dim == 1536
+        # Embeddings stay open source regardless of the LLM provider.
+        assert isinstance(embedder, embeddings.HashingEmbedder)
     finally:
         for cached in (config.get_settings, llm.get_llm, embeddings.get_embedder):
             cached.cache_clear()

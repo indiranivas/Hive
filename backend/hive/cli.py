@@ -24,7 +24,8 @@ from sqlalchemy import func, select
 from api.core.config import get_settings
 from api.core.db import init_db, session_scope
 from api.core.security import resolve_dev_user
-from api.models.orm import IngestionState, Person, VectorChunk, WorkArtifact
+from api.core.vectorstore import ARTIFACT_COLLECTION, KNOWLEDGE_COLLECTION, get_vector_store
+from api.models.orm import IngestionState, Person, WorkArtifact
 from api.services.expertise_mapper import find_experts
 from api.services.query_engine import answer_query
 from ingestion.git_connector import LocalGitProvider
@@ -202,7 +203,11 @@ def cmd_status(_: argparse.Namespace) -> int:
     settings = get_settings()
     with session_scope() as session:
         artifacts = session.execute(select(func.count(WorkArtifact.id))).scalar_one()
-        chunks = session.execute(select(func.count(VectorChunk.id))).scalar_one()
+        # Count via the active vector store so chroma reports correctly too.
+        store = get_vector_store()
+        chunks = store.count(session, ARTIFACT_COLLECTION) + store.count(
+            session, KNOWLEDGE_COLLECTION
+        )
         people = session.execute(select(func.count(Person.id))).scalar_one()
         by_type = session.execute(
             select(WorkArtifact.artifact_type, func.count(WorkArtifact.id)).group_by(

@@ -26,7 +26,9 @@ def get_engine() -> Engine:
         settings = get_settings()
         kwargs: dict = {"future": True, "pool_pre_ping": True}
         if settings.is_sqlite:
-            kwargs["connect_args"] = {"check_same_thread": False}
+            # timeout: wait for a writer instead of failing "database is locked"
+            # when the API, CLI and workers share the dev database.
+            kwargs["connect_args"] = {"check_same_thread": False, "timeout": 30}
         _engine = create_engine(settings.database_url, **kwargs)
         if settings.is_sqlite:
 
@@ -34,6 +36,9 @@ def get_engine() -> Engine:
             def _enable_sqlite_fk(dbapi_conn, _record):  # pragma: no cover - driver hook
                 cursor = dbapi_conn.cursor()
                 cursor.execute("PRAGMA foreign_keys=ON")
+                # WAL lets readers proceed while one writer commits.
+                cursor.execute("PRAGMA journal_mode=WAL")
+                cursor.execute("PRAGMA busy_timeout=30000")
                 cursor.close()
 
     return _engine

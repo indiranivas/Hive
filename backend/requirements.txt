@@ -16,11 +16,17 @@ httpx>=0.27
 # an equivalent plain loop.
 langgraph>=1.2
 
-# Optional providers, safe to keep installed (lazy-imported):
+# Vector store (VECTOR_PROVIDER=chroma): local persistent ChromaDB, open source,
+# no server required. The `sql` provider remains the zero-dependency fallback.
+chromadb>=0.5
+
+# Knowledge graph client (GRAPH_PROVIDER=neo4j): official driver for Neo4j
+# Community Edition (open source). The `memory` provider needs nothing.
+neo4j>=5.0
+
+# Optional, safe to keep installed (lazy-imported):
 #   AUTH_MODE=azure_ad          -> pyjwt[crypto]
 #   AZURE_OPENAI_AUTH=entra     -> azure-identity
-#   LLM_PROVIDER=anthropic      -> anthropic
 # Azure OpenAI itself needs no SDK: it is called over plain HTTPS via httpx.
 pyjwt[crypto]>=2.9
 azure-identity>=1.17
-anthropic>=0.40
