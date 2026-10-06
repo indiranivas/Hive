@@ -14,6 +14,7 @@ from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from api.core.llm import get_llm
@@ -239,6 +240,7 @@ def generate_status(session: Session, person_id: uuid.UUID, team_id: uuid.UUID |
         existing.evidence = payload
         existing.team_id = team_id or person.team_id
         report = existing
+        session.flush()
     else:
         report = StatusReport(
             person_id=person_id,
@@ -248,8 +250,24 @@ def generate_status(session: Session, person_id: uuid.UUID, team_id: uuid.UUID |
             summary=summary,
             evidence=payload,
         )
-        session.add(report)
-    session.flush()
+        # A concurrent request for the same week may insert first (the dashboard
+        # can fetch twice). The savepoint keeps the outer transaction usable;
+        # then the freshly generated summary overwrites the row that won.
+        try:
+            with session.begin_nested():
+                session.add(report)
+        except IntegrityError:
+            winner = session.execute(
+                select(StatusReport).where(
+                    StatusReport.person_id == person_id,
+                    StatusReport.period_start == period_start,
+                    StatusReport.period_end == period_end,
+                )
+            ).scalar_one()
+            winner.summary = summary
+            winner.evidence = payload
+            winner.team_id = team_id or person.team_id
+            session.flush()
 
     return StatusResult(
         person_id=str(person_id),

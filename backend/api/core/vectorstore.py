@@ -7,6 +7,8 @@ dev. `chroma` is the drop-in for real deployments (Qdrant lands in phase 7).
 
 from __future__ import annotations
 
+import contextlib
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -21,6 +23,8 @@ from api.models.orm import VectorChunk
 
 ARTIFACT_COLLECTION = "hive_artifacts"
 KNOWLEDGE_COLLECTION = "hive_knowledge_repo"
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
@@ -150,14 +154,28 @@ class ChromaVectorStore(VectorStore):  # pragma: no cover - optional dependency
             raise RuntimeError(
                 "VECTOR_PROVIDER=chroma requires `pip install -r requirements-ml.txt`"
             ) from exc
+        self._chromadb = chromadb
+        self._connect()
+
+    def _connect(self) -> None:
         settings = get_settings()
         if settings.chroma_url:
             host, _, port = settings.chroma_url.removeprefix("http://").removeprefix(
                 "https://"
             ).partition(":")
-            self._client = chromadb.HttpClient(host=host, port=int(port or 8000))
+            self._client = self._chromadb.HttpClient(host=host, port=int(port or 8000))
         else:
-            self._client = chromadb.PersistentClient(path=settings.chroma_path)
+            self._client = self._chromadb.PersistentClient(path=settings.chroma_path)
+
+    def _reconnect(self) -> None:
+        # Another process (`hive.cli seed --reset`, a worker) rewriting the same
+        # persistent directory leaves this process's cached index pointing at
+        # ids that no longer exist. Dropping the shared client reloads from disk.
+        with contextlib.suppress(Exception):
+            from chromadb.api.client import SharedSystemClient
+
+            SharedSystemClient.clear_system_cache()
+        self._connect()
 
     def _collection(self, collection: str):
         # Cosine space, so `score = 1 - distance` is the same cosine similarity
@@ -188,9 +206,17 @@ class ChromaVectorStore(VectorStore):  # pragma: no cover - optional dependency
         n_results: int = 15,
         where: dict[str, Any] | None = None,
     ) -> list[VectorHit]:
-        result = self._collection(collection).query(
-            query_embeddings=[embedding], n_results=n_results, where=where or None
-        )
+        def run():
+            return self._collection(collection).query(
+                query_embeddings=[embedding], n_results=n_results, where=where or None
+            )
+
+        try:
+            result = run()
+        except Exception:  # noqa: BLE001 - chromadb raises InternalError for a stale index
+            logger.warning("Chroma query failed; reloading the index and retrying once")
+            self._reconnect()
+            result = run()
         hits: list[VectorHit] = []
         ids = result.get("ids", [[]])[0]
         documents = result.get("documents", [[]])[0]

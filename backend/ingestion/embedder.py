@@ -38,6 +38,16 @@ class IngestResult:
         )
 
 
+def _metadata_changed(stored: dict | None, incoming: dict | None) -> bool:
+    """Compare connector metadata, ignoring the topics we derived ourselves.
+
+    `topics` is written back onto the row after extraction, so it is never in an
+    incoming payload -- comparing it would make every re-ingest look changed.
+    """
+    previous = {key: value for key, value in (stored or {}).items() if key != "topics"}
+    return previous != (incoming or {})
+
+
 def persist_artifact(session: Session, artifact: WorkArtifact) -> IngestResult:
     if not (artifact.content or "").strip():
         return IngestResult(skipped=1)
@@ -51,7 +61,14 @@ def persist_artifact(session: Session, artifact: WorkArtifact) -> IngestResult:
 
     result = IngestResult()
     if existing:
-        unchanged = existing.content == artifact.content and existing.title == artifact.title
+        # Metadata counts as a change: a PR whose status flips active -> completed
+        # keeps the same title and body, and that flip drives the whole dashboard's
+        # open/merged/stale counts.
+        unchanged = (
+            existing.content == artifact.content
+            and existing.title == artifact.title
+            and not _metadata_changed(existing.meta, artifact.metadata)
+        )
         if unchanged:
             return IngestResult(skipped=1)
         existing.title = artifact.title

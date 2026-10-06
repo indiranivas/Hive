@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from api.core.graph import MemoryGraph, build_graph
+from api.core.graph import MemoryGraph, _module_of, build_graph
 from api.models.orm import ExpertiseScore, KnowledgeRequest
 
 
@@ -111,6 +111,140 @@ def test_knowledge_requests_link_people_and_topics(db_session, team, person, sec
     kinds = {(e.kind) for e in edges}
     assert {"ASKED", "ANSWERED", "TAGGED"} <= kinds
     assert any(n.kind == "kr" for n in nodes)
+
+
+def _edges(edges, kind):
+    return [e for e in edges if e.kind == kind]
+
+
+def test_org_chart_is_part_of_the_graph(db_session, team, person, second_person):
+    team.manager_id = person.id
+    db_session.flush()
+
+    nodes, edges = build_graph(db_session, team_id=team.id)
+    kinds = {node.kind for node in nodes}
+    assert {"org", "team"} <= kinds
+    # Both people belong to the team; only one manages it.
+    assert len(_edges(edges, "MEMBER_OF")) == 2
+    assert [e.source for e in _edges(edges, "MANAGES")] == [f"person:{person.id}"]
+    assert len(_edges(edges, "PART_OF")) == 1
+
+
+def test_artifacts_link_to_author_repo_topic_and_module(
+    db_session, team, person, artifact_factory
+):
+    artifact_factory(
+        "Rotate signing keys",
+        "publish the new jwks entry before switching the signer",
+        metadata={
+            "repo": "identity-service",
+            "sha": "abc12345",
+            "files_changed": ["identity/keys.py", "tests/identity/test_keys.py"],
+        },
+    )
+
+    nodes, edges = build_graph(db_session, team_id=team.id)
+    assert {"artifact", "module"} <= {node.kind for node in nodes}
+    assert len(_edges(edges, "AUTHORED")) == 1
+    assert len(_edges(edges, "IN_REPO")) == 1
+    # Topics come from the embedder's extraction, so assert presence not count.
+    assert _edges(edges, "ABOUT")
+    modules = {node.label for node in nodes if node.kind == "module"}
+    assert modules == {"identity", "tests/identity"}
+
+
+def test_pull_request_reviewers_become_reviewed_edges(
+    db_session, team, person, second_person, artifact_factory
+):
+    artifact_factory(
+        "PR #45: key rotation",
+        "overlapping jwks publication",
+        artifact_type="pull_request",
+        metadata={
+            "repo": "identity-service",
+            "pr_id": 45,
+            # The author reviewing their own PR is not a relationship.
+            "reviewers": [second_person.email.upper(), person.email],
+        },
+    )
+
+    _, edges = build_graph(db_session, team_id=team.id)
+    reviewed = _edges(edges, "REVIEWED")
+    assert [e.source for e in reviewed] == [f"person:{second_person.id}"]
+
+
+def test_knowledge_request_routing_and_citations_are_edges(
+    db_session, team, person, second_person, artifact_factory
+):
+    artifact = artifact_factory("Idempotency keys", "invoice retries created duplicates")
+    kr = KnowledgeRequest(
+        requester_id=person.id,
+        question="Why did invoice retries duplicate?",
+        status="routed",
+        routed_to_id=second_person.id,
+        tags=["idempotency"],
+        related_artifacts=[str(artifact.id)],
+    )
+    db_session.add(kr)
+    db_session.flush()
+
+    _, edges = build_graph(db_session, team_id=team.id)
+    assert [e.target for e in _edges(edges, "ROUTED_TO")] == [f"person:{second_person.id}"]
+    assert [e.target for e in _edges(edges, "REFERENCES")] == [f"artifact:{artifact.id}"]
+
+
+def test_collaborates_with_edge_matches_the_collaborators_query(
+    db_session, team, person, second_person, artifact_factory
+):
+    """The materialised edge and the computed answer must not drift apart."""
+    from ingestion.embedder import persist_artifact
+    from ingestion.normalizer import WorkArtifact
+
+    artifact_factory("commit one", "auth work")
+    persist_artifact(
+        db_session,
+        WorkArtifact(
+            source="git", source_id="x2", artifact_type="commit", title="commit two",
+            content="more auth work", occurred_at=datetime.now(UTC),
+            author_id=second_person.id, author_name=second_person.display_name,
+            team_id=team.id, metadata={"repo": "test-repo"},
+        ),
+    )
+    _score(db_session, person, "billing-auth")
+    _score(db_session, second_person, "billing-auth")
+
+    _, edges = build_graph(db_session, team_id=team.id)
+    collaboration = _edges(edges, "COLLABORATES_WITH")
+    assert len(collaboration) == 1
+
+    computed = MemoryGraph().collaborators(db_session, person.id, team_id=team.id)
+    assert collaboration[0].weight == computed[0].strength
+
+
+def test_artifact_cap_bounds_nodes_without_shrinking_repo_history(
+    db_session, team, person, artifact_factory, monkeypatch
+):
+    from api.core import config
+
+    monkeypatch.setenv("GRAPH_MAX_ARTIFACTS", "2")
+    config.get_settings.cache_clear()
+    try:
+        for index in range(5):
+            artifact_factory(f"commit {index}", f"auth work {index}", days_ago=index + 1)
+
+        nodes, edges = build_graph(db_session, team_id=team.id)
+        assert len([n for n in nodes if n.kind == "artifact"]) == 2
+        # WORKED_IN is an aggregate over every artifact, capped or not.
+        worked_in = _edges(edges, "WORKED_IN")
+        assert [e.weight for e in worked_in] == [5.0]
+    finally:
+        config.get_settings.cache_clear()
+
+
+def test_module_folding_ignores_bare_filenames():
+    assert _module_of("services/billing/invoices.py") == "services/billing"
+    assert _module_of("src\\lib\\auth.ts") == "src/lib"
+    assert _module_of("README.md") is None
 
 
 def test_memory_sync_reports_counts(db_session, team, person):

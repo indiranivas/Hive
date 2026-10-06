@@ -1,0 +1,5 @@
+# Hive's MCP server (mcp_server/app.py) only. The API, workers, bot and CLI do
+# not need this -- mcp_server/tools.py holds no SDK import, so the whole tool
+# surface is testable without it.
+-r requirements.txt
+mcp>=1.26

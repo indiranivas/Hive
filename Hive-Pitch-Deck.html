@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hive Pitch Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e0d; --surface: #181816; --surface-2: #22221f; --hairline: #2e2e2a;
+    --ink: #f3f2ec; --ink-2: #c9c8bf; --ink-3: #8f8e86;
+    --accent: #f2b01e; --accent-soft: rgba(242,176,30,.14);
+    --good: #3fbf7f; --warn: #fab219; --blue: #3987e5;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--ink);
+    font-family: Inter, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  .deck { height: 100%; position: relative; overflow: hidden; }
+  .slide { position: absolute; inset: 0; padding: 6vh 7vw; display: flex; flex-direction: column;
+    justify-content: center; opacity: 0; pointer-events: none; transition: opacity .35s ease; }
+  .slide.active { opacity: 1; pointer-events: auto; }
+  .kicker { color: var(--accent); font-size: clamp(12px, 1.2vw, 16px); font-weight: 600;
+    letter-spacing: .12em; text-transform: uppercase; margin-bottom: 2vh; }
+  h1 { font-size: clamp(36px, 6vw, 88px); font-weight: 700; letter-spacing: -.03em; line-height: 1.02; }
+  h2 { font-size: clamp(26px, 3.6vw, 52px); font-weight: 700; letter-spacing: -.02em; line-height: 1.1; max-width: 22ch; }
+  .lede { font-size: clamp(16px, 1.8vw, 26px); color: var(--ink-2); line-height: 1.45; max-width: 46ch; margin-top: 3vh; }
+  .grid { display: grid; gap: 1.6vw; margin-top: 5vh; }
+  .g3 { grid-template-columns: repeat(3, 1fr); }
+  .g4 { grid-template-columns: repeat(4, 1fr); }
+  .g2 { grid-template-columns: repeat(2, 1fr); }
+  .card { background: var(--surface); border: 1px solid var(--hairline); border-radius: 14px; padding: 2.4vh 1.6vw; }
+  .card h3 { font-size: clamp(14px, 1.4vw, 20px); font-weight: 600; margin-bottom: 1vh; }
+  .card p, .card li { font-size: clamp(12px, 1.15vw, 17px); color: var(--ink-2); line-height: 1.5; }
+  .card ul { list-style: none; } .card li { padding-left: 1.1em; position: relative; margin-top: .5vh; }
+  .card li::before { content: "›"; position: absolute; left: 0; color: var(--accent); }
+  .big { font-size: clamp(28px, 4vw, 60px); font-weight: 700; letter-spacing: -.02em; color: var(--ink); }
+  .big.accent { color: var(--accent); }
+  .label { font-size: clamp(11px, 1vw, 14px); text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3); margin-top: .6vh; }
+  .criteria { position: absolute; top: 4vh; right: 7vw; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: 50vw; }
+  .chip { font-size: clamp(10px, .85vw, 12px); padding: 4px 10px; border-radius: 999px;
+    border: 1px solid var(--hairline); color: var(--ink-3); }
+  .chip.on { border-color: transparent; background: var(--accent-soft); color: var(--accent); }
+  .flow { display: flex; align-items: center; gap: 1.2vw; margin-top: 5vh; flex-wrap: wrap; }
+  .node { background: var(--surface); border: 1px solid var(--hairline); border-radius: 12px; padding: 1.6vh 1.4vw;
+    font-size: clamp(12px, 1.2vw, 18px); }
+  .node.hive { border-color: var(--accent); color: var(--accent); font-weight: 700; font-size: clamp(16px, 1.8vw, 26px); }
+  .arrow { color: var(--ink-3); font-size: clamp(18px, 2vw, 28px); }
+  .stack { display: flex; flex-direction: column; gap: 1vh; }
+  .demo-steps { counter-reset: s; list-style: none; margin-top: 4vh; display: grid; gap: 1.4vh; max-width: 60ch; }
+  .demo-steps li { counter-increment: s; font-size: clamp(14px, 1.5vw, 22px); color: var(--ink-2); display: flex; gap: 1vw; align-items: baseline; }
+  .demo-steps li::before { content: counter(s); color: var(--bg); background: var(--accent); border-radius: 999px;
+    min-width: 1.6em; height: 1.6em; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: .8em; }
+  .demo-steps b { color: var(--ink); font-weight: 600; }
+  .note { font-size: clamp(11px, .95vw, 14px); color: var(--ink-3); margin-top: 3vh; max-width: 80ch; line-height: 1.5; }
+  .footer { position: absolute; left: 7vw; right: 7vw; bottom: 3vh; display: flex; justify-content: space-between;
+    font-size: 12px; color: var(--ink-3); }
+  .hex { display: inline-block; width: .9em; height: .9em; margin-right: .3em; vertical-align: -.08em; }
+  .nav { position: fixed; bottom: 2.4vh; right: 2vw; display: flex; gap: 6px; z-index: 5; }
+  .nav button { background: var(--surface); color: var(--ink-2); border: 1px solid var(--hairline); border-radius: 8px;
+    padding: 6px 12px; cursor: pointer; font: inherit; font-size: 13px; }
+  .nav button:hover { color: var(--ink); border-color: var(--accent); }
+  .progress { position: fixed; left: 0; top: 0; height: 3px; background: var(--accent); transition: width .3s ease; }
+  @media (max-width: 760px) {
+    .g3, .g4, .g2 { grid-template-columns: 1fr; }
+    .slide { padding: 8vh 16px 12vh; justify-content: flex-start; overflow-y: auto; }
+    .criteria { position: static; justify-content: flex-start; max-width: none; margin-bottom: 2vh; }
+  }
+  .split { display: grid; grid-template-columns: 1fr 1.6fr; gap: 3vw; align-items: center; margin-top: 2vh; }
+  .shot { width: 100%; border-radius: 12px; border: 1px solid var(--hairline); box-shadow: 0 24px 60px -20px rgba(0,0,0,.7); display: block; }
+  .card code, .card pre { font-family: ui-monospace, Consolas, monospace; color: var(--accent); font-size: clamp(11px, 1vw, 15px); }
+  .card pre { color: var(--ink); white-space: pre; line-height: 1.5; }
+  .node small { color: var(--ink-3); font-size: .7em; }
+  .editor p { margin-top: 1vh; }
+  .editor .msg { background: var(--surface-2); border-radius: 10px; padding: 1vh 1vw; color: var(--ink); }
+  .editor .msg.user { margin-left: 3vw; }
+  .editor .call { font-family: ui-monospace, Consolas, monospace; color: var(--accent); font-size: clamp(10px, .9vw, 13px); }
+  .editor .result { border-left: 3px solid var(--accent); padding-left: 1vw; }
+  .editor .result span { color: var(--ink-3); }
+  @media (max-width: 760px) { .split { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="deck" id="deck">
+
+  <!-- 1 · Title -->
+  <section class="slide active">
+    <p class="kicker">Internal hackathon · Reimagine</p>
+    <h1><svg class="hex" viewBox="0 0 24 24"><path d="M12 2.6 20.4 7.3v9.4L12 21.4 3.6 16.7V7.3z" fill="none" stroke="#f2b01e" stroke-width="2.4" stroke-linejoin="round"/></svg>Hive</h1>
+    <p class="lede">A team's memory, built automatically from the work it already does. Ask it anything and get an answer with the commit or PR behind it.</p>
+    <div class="footer"><span>Nivas S · LevelShift</span><span>← → to navigate</span></div>
+  </section>
+
+  <!-- 2 · Problem -->
+  <section class="slide">
+    <div class="criteria"><span class="chip on">Problem relevance</span></div>
+    <p class="kicker">The problem</p>
+    <h2>What a team knows is in five tools and a few people's heads.</h2>
+    <div class="grid g3">
+      <div class="card"><h3>“Who knows this?”</h3><p>Days of asking around, and the same questions answered again and again.</p></div>
+      <div class="card"><h3>Status by hand</h3><p>The team picture gets rebuilt every week from memory rather than evidence.</p></div>
+      <div class="card"><h3>Knowledge walks out</h3><p>When someone moves on, what they knew leaves with them. Nobody sees the risk coming.</p></div>
+    </div>
+  </section>
+
+  <!-- 3 · Solution -->
+  <section class="slide">
+    <div class="criteria"><span class="chip on">Problem-solution fit</span></div>
+    <p class="kicker">What Hive does</p>
+    <h2>It reads the work trail, so nobody has to.</h2>
+    <div class="flow">
+      <div class="stack"><div class="node">Git commits & PRs</div><div class="node">Azure DevOps</div><div class="node">Email & Teams calls</div></div>
+      <span class="arrow">→</span>
+      <div class="node hive">Hive</div>
+      <span class="arrow">→</span>
+      <div class="stack"><div class="node">Answers with citations</div><div class="node">Who-knows-what map</div><div class="node">Auto weekly status</div><div class="node">Gaps routed to experts</div></div>
+    </div>
+    <div class="grid g3">
+      <div class="card"><h3>Passive</h3><p>No new tool and no data entry. Nobody changes how they work.</p></div>
+      <div class="card"><h3>Cited, never invented</h3><p>Every claim links to the commit, PR or answer behind it.</p></div>
+      <div class="card"><h3>Read-only</h3><p>Hive can't send, commit or update anything. It only observes and answers.</p></div>
+    </div>
+  </section>
+
+  <!-- 4 · Capabilities -->
+  <section class="slide">
+    <div class="criteria"><span class="chip on">Problem-solution fit</span><span class="chip on">Originality</span></div>
+    <p class="kicker">Capabilities</p>
+    <h2>What Hive can do today.</h2>
+    <div class="grid g4">
+      <div class="card"><h3>Ask anything</h3><p>Plain-English answers over the work trail, every claim cited</p></div>
+      <div class="card"><h3>Who knows what</h3><p>Expertise scored from real commits and answers, not skill tags</p></div>
+      <div class="card"><h3>Knowledge graph</h3><p>People, repos, topics and questions linked in Neo4j</p></div>
+      <div class="card"><h3>Auto status</h3><p>Each person's weekly update drafted from their work</p></div>
+      <div class="card"><h3>Gap routing</h3><p>Unanswered questions sent to the likely expert, then indexed</p></div>
+      <div class="card"><h3>Blast radius</h3><p>What else moves when a repo changes, and who to tell</p></div>
+      <div class="card"><h3>Prior art</h3><p>“Has anyone hit this error before?” Who fixed it, and how</p></div>
+      <div class="card"><h3>Bus-factor alerts</h3><p>Repos and topics that rest on a single person</p></div>
+    </div>
+  </section>
+
+  <!-- 5 · AI -->
+  <section class="slide">
+    <div class="criteria"><span class="chip on">Real AI use case</span></div>
+    <p class="kicker">How the AI works</p>
+    <h2>Not a chatbot guessing. It retrieves, grades and cites.</h2>
+    <div class="flow">
+      <div class="node">1 · Ingest</div><span class="arrow">→</span>
+      <div class="node">2 · Understand<br><small>LLM topics + embeddings</small></div><span class="arrow">→</span>
+      <div class="node">3 · Retrieve<br><small>vector + keyword</small></div><span class="arrow">→</span>
+      <div class="node hive">4 · Grade</div><span class="arrow">→</span>
+      <div class="node">5 · Answer, cited</div>
+    </div>
+    <p class="lede">Weak evidence? It rewrites the query and retries once. Still nothing? It says so and routes the question to the expert. Built as a LangGraph state machine on Azure OpenAI.</p>
+  </section>
+
+  <!-- 6 · Ask Hive -->
+  <section class="slide">
+    <div class="criteria"><span class="chip on">Real AI use case</span><span class="chip on">Clarity</span></div>
+    <p class="kicker">Live · Ask Hive</p>
+    <div class="split">
+      <div><h2>Ask in plain English. Get the proof.</h2><p class="lede">“Who fixed the JWT refresh loop in billing?” Hive names the person and date, and cites the commit and PR.</p></div>
+      <img class="shot" src="dashboard/public/presentation/ask.png" alt="Ask Hive answering with cited sources">
+    </div>
+  </section>
+
+  <!-- 7 · Claude + MCP -->
+  <section class="slide">
+    <div class="criteria"><span class="chip on">Originality</span><span class="chip on">Re-usability</span></div>
+    <p class="kicker">Claude + MCP · Hive in the editor</p>
+    <h2>Claude asks the team's memory before it guesses.</h2>
+    <div class="grid g2">
+      <div class="card editor">
+        <p class="msg user">Getting a token refresh loop on 401s in billing auth. Has anyone seen this?</p>
+        <p class="call">▸ hive_prior_art("401 errors cause a token refresh loop in billing auth")</p>
+        <p class="result"><b>1. Deepa V</b>: Fix JWT refresh loop in billing auth middleware · 2d ago<br><span>billing-service@a1b2c3d4 · services/billing/auth_middleware.py</span><br>“Cache the refreshed token for its full TTL and retry once.”</p>
+        <p class="msg">Your team already fixed this. I'll apply the same pattern; Deepa is the person to ask.</p>
+      </div>
+      <div class="card"><h3>Six MCP tools</h3><ul>
+        <li><code>hive_prior_art</code>: has the team hit this before?</li>
+        <li><code>hive_blast_radius</code>: what moves if I change this?</li>
+        <li><code>hive_area_briefing</code>: brief me on unfamiliar code</li>
+        <li><code>hive_who_knows</code>: who has evidence on a topic</li>
+        <li><code>hive_ask</code>: any question, with citations</li>
+        <li><code>hive_raise_request</code>: log a gap, route to an expert</li>
+      </ul><p style="margin-top:1.4vh">Runs locally over stdio · <code>claude mcp add hive</code></p></div>
+    </div>
+  </section>
+
+  <!-- 8 · Neo4j graph -->
+  <section class="slide">
+    <div class="criteria"><span class="chip on">Originality</span><span class="chip on">Scaling potential</span></div>
+    <p class="kicker">Knowledge graph · Neo4j</p>
+    <h2>Everything linked in one graph.</h2>
+    <div class="grid g2">
+      <div class="card"><h3>The graph model</h3><ul>
+        <li><code>(Person)-[:KNOWS]->(Topic)</code></li>
+        <li><code>(Person)-[:AUTHORED|REVIEWED]->(Artifact)</code></li>
+        <li><code>(Artifact)-[:IN_REPO]->(Repo)</code></li>
+        <li><code>(Person)-[:ASKED|ANSWERED]->(KR)</code></li>
+        <li><code>(Person)-[:COLLABORATES_WITH]->(Person)</code></li>
+        <li><code>(Repo)-[:COUPLED_WITH]->(Repo)</code></li>
+      </ul></div>
+      <div class="card"><h3>Cypher: topics that rest on one person</h3>
+<pre>MATCH (p:Hive {kind:'person'})
+      -[r:REL {kind:'KNOWS'}]->
+      (t:Hive {kind:'topic'})
+WITH t, collect(p) AS knowers
+WHERE size(knowers) = 1
+RETURN t.label AS bus_factor_risk</pre>
+        <p style="margin-top:1vh">Neo4j via Bolt or Aura's HTTPS Query API, with an in-memory fallback.</p></div>
+    </div>
+  </section>
+
+  <!-- 9 · Org map -->
+  <section class="slide">
+    <div class="criteria"><span class="chip on">Clarity</span></div>
+    <p class="kicker">Live · Org map & auto status</p>
+    <h2>Who works with whom, and what they did this week.</h2>
+    <div class="grid g2">
+      <img class="shot" src="dashboard/public/presentation/graph.png" alt="Organisation map">
+      <img class="shot" src="dashboard/public/presentation/status.png" alt="Auto status">
+    </div>
+  </section>
+
+  <!-- 10 · Stack & surfaces -->
+  <section class="slide">
+    <div class="criteria"><span class="chip on">Feasibility</span><span class="chip on">Re-usability</span></div>
+    <p class="kicker">Under the hood</p>
+    <h2>One engine. Dashboard, Teams and Claude.</h2>
+    <div class="grid g3">
+      <div class="card"><h3>Surfaces</h3><ul><li>Next.js dashboard</li><li>@Hive Teams bot (Adaptive Cards)</li><li>Claude via MCP</li></ul></div>
+      <div class="card"><h3>Engine</h3><ul><li>FastAPI + LangGraph</li><li>Azure OpenAI</li><li>ChromaDB vectors · Neo4j graph</li></ul></div>
+      <div class="card"><h3>Trust</h3><ul><li>Read-only, role-scoped</li><li>Every query audited</li><li>Work output only, no surveillance</li></ul></div>
+    </div>
+  </section>
+
+  <!-- 11 · Close -->
+  <section class="slide">
+    <p class="kicker">Hive</p>
+    <h1 style="font-size:clamp(36px,5vw,76px)">Knows everything.<br><span style="color:var(--accent)">Changes nothing.</span></h1>
+    <p class="lede">Next: Azure DevOps, then email and meetings, all through the same pipeline.</p>
+    <div class="footer"><span>Hive · the team's memory, built from the work itself</span><span>Thank you · Questions?</span></div>
+  </section>
+
+</div>
+<div class="nav"><button id="prev" aria-label="Previous slide">←</button><button id="next" aria-label="Next slide">→</button></div>
+<script>
+  const slides = [...document.querySelectorAll('.slide')];
+  let index = 0;
+  try { index = Math.min(slides.length - 1, Math.max(0, parseInt(location.hash.slice(1) || '1', 10) - 1)) || 0; } catch (e) {}
+  function show(next) {
+    index = Math.max(0, Math.min(slides.length - 1, next));
+    slides.forEach((slide, i) => slide.classList.toggle('active', i === index));
+    document.getElementById('progress').style.width = ((index + 1) / slides.length * 100) + '%';
+    history.replaceState(null, '', '#' + (index + 1));
+  }
+  document.addEventListener('keydown', (event) => {
+    if (['ArrowRight', 'PageDown', ' '].includes(event.key)) { event.preventDefault(); show(index + 1); }
+    if (['ArrowLeft', 'PageUp'].includes(event.key)) { event.preventDefault(); show(index - 1); }
+    if (event.key === 'Home') show(0);
+    if (event.key === 'End') show(slides.length - 1);
+  });
+  document.getElementById('prev').onclick = () => show(index - 1);
+  document.getElementById('next').onclick = () => show(index + 1);
+  show(index);
+</script>
+</body>
+</html>

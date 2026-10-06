@@ -7,6 +7,7 @@ import {
   Chip,
   EmptyState,
   ErrorState,
+  Inline,
   PageHeader,
   Skeleton,
 } from "@/components/ui";
@@ -88,7 +89,7 @@ function RequestCard({ kr, onChanged }: { kr: KnowledgeRequest; onChanged: () =>
       {kr.answer ? (
         <div className="mt-3 rounded-lg bg-surface-inset p-3">
           <p className="whitespace-pre-line text-sm leading-relaxed text-ink-secondary">
-            {kr.answer}
+            <Inline text={kr.answer} />
           </p>
         </div>
       ) : null}

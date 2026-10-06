@@ -36,6 +36,10 @@ class Settings(BaseSettings):
     # Knowledge graph: `memory` derives it from SQL on demand (no service);
     # `neo4j` mirrors it into Neo4j (Community Edition or Aura) for Cypher access.
     graph_provider: Literal["memory", "neo4j"] = "memory"
+    # Artifact nodes are capped so a repo with 50k commits cannot blow up the
+    # graph payload. The most recent ones win; aggregate edges (WORKED_IN) are
+    # still derived from every artifact.
+    graph_max_artifacts: int = 300
     neo4j_uri: str = "bolt://localhost:7687"
     # Aura's downloadable .env uses NEO4J_USERNAME; accept both spellings.
     neo4j_user: str = Field(

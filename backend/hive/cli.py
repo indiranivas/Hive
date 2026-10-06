@@ -52,7 +52,7 @@ def cmd_seed(args: argparse.Namespace) -> int:
         summary = seed_demo_data(session, reset=args.reset)
     _out(
         "seeded: {people} people, {artifacts} artifacts, {chunks} chunks, "
-        "{knowledge} answered KRs".format(**summary)
+        "{knowledge} answered KRs, {open_requests} open requests".format(**summary)
     )
     return 0
 

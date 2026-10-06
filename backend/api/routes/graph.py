@@ -110,8 +110,13 @@ def graph_bus_factor(
 @router.post("/sync", response_model=GraphSyncResponse)
 def graph_sync(
     db: Session = Depends(get_db),
-    user: Person = Depends(require("can_manage_connectors")),
+    _: Person = Depends(require("can_manage_connectors")),
 ) -> GraphSyncResponse:
-    """Rebuild the graph mirror (a no-op for `memory`, which is always live)."""
-    stats = get_graph().sync(db, team_id=user.team_id)
+    """Rebuild the graph mirror (a no-op for `memory`, which is always live).
+
+    Deliberately org-wide rather than scoped to the caller's team: sync replaces
+    the entire mirror, so scoping it to one team would silently delete every
+    other team's nodes. The endpoint is admin-only, which is the scope gate.
+    """
+    stats = get_graph().sync(db, team_id=None)
     return GraphSyncResponse(**stats)

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "hive": {
+      "command": "python",
+      "args": ["scripts/hive_mcp.py"],
+      "env": {
+        "PYTHONIOENCODING": "utf-8"
+      }
+    }
+  }
+}

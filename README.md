@@ -49,13 +49,15 @@ npm install
 npm run dev                        # http://localhost:3000
 ```
 
-It needs the API running (`NEXT_PUBLIC_API_URL`, default `http://localhost:8000`). Seven pages:
+It needs the API running (`NEXT_PUBLIC_API_URL`, default `http://localhost:8000`). Nine pages:
 
 | Page | What it shows |
 | --- | --- |
+| `/overview` Leadership overview | The problem and value on one page: work captured, questions answered, hours saved (with its assumptions shown), a scale calculator, and repos that rest on one person |
 | `/` Team pulse | Activity tiles, 8-week stacked activity chart, contributors, latest work, alerts, data coverage |
 | `/status` Auto status | Weekly per-person summaries with expand-to-evidence, week stepper, regenerate |
 | `/expertise` Expertise map | Expert search, topic coverage bars, a topic↔people diagram, bus-factor flags |
+| `/graph` Org map | Radial relationship ring: people grouped by team with collaboration chords, or repos with coupling chords; click any node for every relationship it holds |
 | `/knowledge` Knowledge repo | Browse, search and **answer** open requests; answers are indexed on save |
 | `/knowledge/gaps` Gap analytics | Open vs answered, resolution time, most-requested topics, bus factor, weekly trend |
 | `/ask` Ask Hive | The same engine as the Teams bot, with sources and a raise-a-request button |
@@ -63,10 +65,12 @@ It needs the API running (`NEXT_PUBLIC_API_URL`, default `http://localhost:8000`
 
 Design notes worth knowing:
 
-- **Charts are hand-rolled inline SVG** — no chart library. Colours come from a validated
-  categorical palette (checked for colourblind separation and contrast in both themes), series
-  slots are fixed so a filter never repaints the survivors, and every bar carries a direct value
-  label.
+- **Charts and the org map are hand-rolled inline SVG** — no chart library, no force-directed
+  layout engine. Colours come from a validated categorical palette (checked for colourblind
+  separation and contrast in both themes), series slots are fixed so a filter never repaints the
+  survivors, and every bar carries a direct value label. The org map places nodes
+  deterministically: a simulation that settles somewhere different on every load draws a picture
+  nobody can point at twice.
 - **Light and dark are separately chosen palettes**, not an inversion, applied from
   `data-theme` before first paint so there is no flash of the wrong theme.
 - **Missing data is stated, not faked.** "On track" reads `—` with *"Needs the Azure DevOps
@@ -113,13 +117,55 @@ What the bot understands: any question (the default), `who knows <topic>`, `kr <
 `help`. Answers arrive as Adaptive Cards carrying their sources; when Hive has no evidence, the
 card offers a **Raise a Knowledge Request** button that records the gap.
 
+## Hive in your editor (MCP)
+
+Claude reads the knowledge graph directly while you code, over MCP — in VS Code
+or the Claude Code CLI. Register it once on your account and it follows you into
+every project, not just this repo:
+
+```bash
+pip install -r backend/requirements-mcp.txt
+claude mcp add hive --scope user -e PYTHONIOENCODING=utf-8   -- "<abs path to python>" "<abs path to Hive>/scripts/hive_mcp.py"
+claude mcp get hive                   # Scope: User config (available in all your projects)
+```
+
+Absolute paths matter: user scope launches the server from whatever folder you
+are in. `.mcp.json` and `.vscode/mcp.json` are committed as well, for teammates
+who have just cloned the repo and want the tools without registering anything.
+
+Six tools, each aimed at a moment that actually happens mid-task:
+
+| Tool | Fires when |
+| --- | --- |
+| `hive_prior_art` | you paste an error — *"Deepa hit this on the 22nd, fixed it in `auth_middleware.py`, commit `a1b2c3d4`"* |
+| `hive_blast_radius` | you are about to change a shared service — what moves with it, and who to tell |
+| `hive_area_briefing` | you open code you have never touched — who worked here, what they hit, how it ended |
+| `hive_who_knows` | you need a person rather than an answer |
+| `hive_ask` | anything else, with sources |
+| `hive_raise_request` | nothing was found, so the gap gets recorded and routed |
+
+Full walkthrough, worked examples and troubleshooting:
+**[docs/MCP-SETUP.md](docs/MCP-SETUP.md)**. Three things worth knowing up front:
+
+- **Coupling is inferred, not parsed.** Hive reads no manifests and no import
+  graph. `hive_blast_radius` derives coupling from who changes two repos, who
+  changes both inside one week, and which commits name the other by name — and
+  it returns that evidence with every result. A prompt to check, not proof.
+- **These tools reach org-wide** where the role allows it, unlike the dashboard,
+  which defaults a member to their own team. "Has anyone here solved this" is
+  worthless answered inside one team, because the service that depends on yours
+  is usually owned by someone else. Gated on the existing `can_query_org`.
+- **The bot's split, again.** `mcp_server/tools.py` holds no SDK import, so the
+  whole tool surface is testable without the MCP SDK installed;
+  `mcp_server/app.py` is the transport and nothing else.
+
 ## Running the tests
 
 ```bash
 cd backend && python -m pytest
 ```
 
-155 tests cover chunking, embeddings, both vector stores (the Chroma tests assert cosine
+201 tests cover chunking, embeddings, both vector stores (the Chroma tests assert cosine
 scoring and metadata sanitizing, and skip themselves unless chromadb is installed), git
 parsing, ingestion idempotency,
 expertise decay, retrieval scoping, the API's permission gates, the bot's parsing, dispatch, cards
@@ -129,6 +175,12 @@ resource), and the dashboard endpoints — pulse honesty, status generation and 
 lifecycle and gap analytics, and both LangGraph flows — grading thresholds, the rewrite-recovery
 path, the retry cap, routing rank order, load balancing, self-routing refusal and outbox dedupe.
 
+The MCP surface has its own two files. `test_mcp.py` drives every tool without the SDK — prior
+art naming the person, file and commit; blast radius returning its evidence and its caveat; the
+briefing admitting when nothing is written down; an `ask` landing in `query_log` as
+`surface='mcp'`. `test_mcp_transport.py` asserts what a client actually sees on the wire, and
+carries the regression for the bug that shipped six tools whose only argument was `kwargs`.
+
 The dashboard itself is verified by build + lint (`npx next build`, `npx eslint src`) and was
 driven in a real browser end to end: ask a question, get sources; ask an unknown one, raise the
 request; answer it in the repo; re-ask and get the repo's answer.
@@ -136,8 +188,9 @@ request; answer it in the repo; re-ask and get the repo's answer.
 Six of those cover `bot/app.py`, the Bot Framework transport, using a recording adapter in place
 of the channel — a card comes back for a question, the conversation reference is stored, a card
 action round-trips, and a dispatch failure apologises in-channel instead of returning a 500. They
-need the SDK, so `python -m pytest` reports **149 passed, 1 skipped** without it and **155 passed**
-once `requirements-bot.txt` is installed.
+need the SDK; so do the six MCP transport tests and the Neo4j provider test. A bare
+`python -m pytest` reports **194 passed, 2 skipped** with `requirements-mcp.txt` installed but
+without botbuilder or the Neo4j driver, and **201 passed** once all three are in.
 
 ## Orchestration: two LangGraph state machines
 
@@ -235,14 +288,35 @@ auth on Cognitive Services anyway. Tokens are cached until just before expiry.
 `/api/graph/*` answers the multi-hop questions vector search cannot: `overview` and
 `neighborhood` return nodes+edges for visualisation, `collaborators` finds people who share
 repos and topics with someone, and `bus-factor` lists topics that rest on a single expert.
-The graph — `(Person)-[KNOWS]->(Topic)`, `(Person)-[WORKED_IN]->(Repo)`,
-`(Person)-[ASKED|ANSWERED]->(KR)-[TAGGED]->(Topic)` — is derived entirely from the
-relational tables, so it needs no separate ingestion.
+Eight node kinds and sixteen relationship kinds, all derived from the relational tables —
+no separate ingestion:
+
+```text
+(Team)-[PART_OF]->(Org)              (Person)-[MEMBER_OF|MANAGES]->(Team)
+(Person)-[KNOWS]->(Topic)            (Person)-[WORKED_IN]->(Repo)
+(Person)-[AUTHORED|REVIEWED]->(Artifact)
+(Artifact)-[IN_REPO]->(Repo)         (Artifact)-[ABOUT]->(Topic)
+(Artifact)-[TOUCHED]->(Module)       — changed file paths, folded to their directory
+(Person)-[ASKED|ANSWERED]->(KR)      (KR)-[ROUTED_TO]->(Person)
+(KR)-[TAGGED]->(Topic)               (KR)-[REFERENCES]->(Artifact)
+(Person)-[COLLABORATES_WITH]->(Person)
+```
+
+`COLLABORATES_WITH` is the only edge with no row behind it: it materialises the shared-repo
+and shared-topic overlap `collaborators` computes, weighted `repos×2 + topics`, so Neo4j can
+traverse it in one hop. Everything else maps to a column. That density is what makes queries
+like *"who reviews code in a repo they never commit to"* a single Cypher match.
+
+Artifact nodes are capped by `GRAPH_MAX_ARTIFACTS` (default 300, most recent first) so a repo
+with 50k commits cannot blow up the payload; `WORKED_IN` is still aggregated over every
+artifact, so the cap never shrinks someone's repo history.
 
 `GRAPH_PROVIDER=memory` (default) derives it on demand: no service, never stale. `neo4j`
 mirrors it into Neo4j — Community Edition via `bolt://`, or AuraDB via `neo4j+s://`; use the
 `https://` URI form to go over Aura's Query API on port 443 where a firewall blocks Bolt
 (corporate networks commonly do). `POST /api/graph/sync` rebuilds the mirror after ingestion.
+Sync is deliberately org-wide rather than scoped to the caller's team: it replaces the whole
+mirror, so scoping it would silently delete every other team's nodes.
 
 ### Local semantic embeddings (open source)
 
@@ -265,16 +339,19 @@ backend/
   api/core/        config, db session, embeddings, vector store, LLM, auth, prompts
   api/models/      SQLAlchemy tables, portable column types, pydantic schemas
   api/routes/      /api/query, /api/expertise, /api/admin
-  api/services/    query engine, retrieval graph, KR routing graph, expertise, topics
+  api/services/    query engine, retrieval graph, KR routing graph, expertise, topics,
+                   prior art (has anyone hit this?), dependencies (blast radius)
   bot/             commands, cards, handlers (all SDK-free) + app.py transport, proactive
+  mcp_server/      tools.py (SDK-free) + app.py stdio transport -- Claude in the editor
   ingestion/       git connector (local | azure_repos | github), normalizer, embedder, runner
   workers/         Celery app + scheduled git ingestion
   db/              Alembic migrations, dev seed data
   hive/cli.py      init-db | seed | ingest-git | ask | experts | bot | status
   tests/
-dashboard/         Next.js app: 7 pages, hand-rolled SVG charts, typed API client
+dashboard/         Next.js app: 8 pages, hand-rolled SVG charts + org map, typed API client
 appPackage/        Teams manifest + icons
-scripts/           build_teams_package.py -> sideloadable zip
+scripts/           build_teams_package.py -> sideloadable zip; hive_mcp.py -> MCP launcher
+.mcp.json          MCP server definition for Claude Code (.vscode/mcp.json for VS Code)
 ```
 
 ## Design decisions worth knowing

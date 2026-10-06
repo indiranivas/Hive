@@ -135,3 +135,19 @@ def test_run_provider_records_connector_failure(db_session, team, tmp_path):
     state = db_session.get(IngestionState, provider.name)
     assert state.last_status == "error"
     assert state.last_error
+
+
+def test_metadata_only_change_is_not_skipped(db_session, person, team):
+    """A PR flipping active -> completed keeps its title and body."""
+    base = _dto("pr-1", "PR #7: billing auth", "Body.", person, team)
+    base.metadata = {"repo": "billing-service", "pr_id": 7, "status": "active"}
+    assert persist_artifact(db_session, base).created == 1
+
+    merged = _dto("pr-1", "PR #7: billing auth", "Body.", person, team)
+    merged.metadata = {"repo": "billing-service", "pr_id": 7, "status": "completed"}
+    assert persist_artifact(db_session, merged).updated == 1
+
+    artifact = db_session.execute(select(WorkArtifact)).scalars().one()
+    assert artifact.meta["status"] == "completed"
+    # The derived topics survive the metadata refresh.
+    assert artifact.meta.get("topics")
