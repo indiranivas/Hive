@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Button, Card, Chip, EmptyState, PageHeader } from "@/components/ui";
+import { useEffect, useState } from "react";
+import { Button, Card, Chip, EmptyState, Inline, PageHeader } from "@/components/ui";
 import { api } from "@/lib/api";
 import { ARTIFACT_LABELS, shortDate } from "@/lib/format";
 import type { QueryResponse } from "@/lib/types";
@@ -36,6 +36,18 @@ export default function AskPage() {
       setAsking(false);
     }
   };
+
+  // `/ask?q=...` asks on arrival, so the presentation can deep-link a live question.
+  // Deferred to a timer so a dev-mode double mount (cleared by the cleanup) asks once.
+  useEffect(() => {
+    const initial = new URLSearchParams(window.location.search).get("q");
+    if (!initial) return;
+    const timer = setTimeout(() => {
+      setQuestion(initial);
+      ask(initial);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const raiseRequest = async () => {
     const kr = await api.createKnowledgeRequest(asked);
@@ -103,7 +115,7 @@ export default function AskPage() {
                     line.trim().startsWith("(") ? "text-ink-muted" : "text-ink-secondary"
                   }`}
                 >
-                  {line}
+                  <Inline text={line} />
                 </p>
               ) : null,
             )}

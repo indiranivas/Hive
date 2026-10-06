@@ -1,0 +1,12 @@
+{
+  "servers": {
+    "hive": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["${workspaceFolder}/scripts/hive_mcp.py"],
+      "env": {
+        "PYTHONIOENCODING": "utf-8"
+      }
+    }
+  }
+}

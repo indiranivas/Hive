@@ -7,6 +7,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
@@ -32,15 +33,29 @@ class Settings(BaseSettings):
     chroma_url: str | None = None
     chroma_path: str = (DATA_DIR / "chroma").as_posix()
 
-    embedding_provider: Literal[
-        "hashing", "azure_openai", "sentence-transformers", "mistral"
-    ] = "hashing"
+    # Knowledge graph: `memory` derives it from SQL on demand (no service);
+    # `neo4j` mirrors it into Neo4j (Community Edition or Aura) for Cypher access.
+    graph_provider: Literal["memory", "neo4j"] = "memory"
+    # Artifact nodes are capped so a repo with 50k commits cannot blow up the
+    # graph payload. The most recent ones win; aggregate edges (WORKED_IN) are
+    # still derived from every artifact.
+    graph_max_artifacts: int = 300
+    neo4j_uri: str = "bolt://localhost:7687"
+    # Aura's downloadable .env uses NEO4J_USERNAME; accept both spellings.
+    neo4j_user: str = Field(
+        default="neo4j", validation_alias=AliasChoices("NEO4J_USER", "NEO4J_USERNAME")
+    )
+    neo4j_password: str | None = None
+    neo4j_database: str = "neo4j"
+
+    # Embeddings are open source only: `hashing` is offline and dependency-free,
+    # `sentence-transformers` runs local models with no egress.
+    embedding_provider: Literal["hashing", "sentence-transformers"] = "hashing"
     embedding_model: str = "all-MiniLM-L6-v2"
     embedding_dim: int = 384
 
-    llm_provider: Literal["stub", "azure_openai", "mistral", "anthropic"] = "stub"
-    llm_api_key: str | None = None
-    llm_model: str = "mistral-large-latest"
+    # The LLM is the one non-open-source piece: Azure OpenAI, inside the tenant.
+    llm_provider: Literal["stub", "azure_openai"] = "stub"
     llm_max_tokens: int = 2048
     llm_temperature: float = 0.1
     llm_timeout_seconds: float = 60.0
@@ -52,13 +67,10 @@ class Settings(BaseSettings):
     azure_openai_api_key: str | None = None
     azure_openai_api_version: str = "2024-10-21"
     azure_openai_deployment: str | None = None
-    azure_openai_embedding_deployment: str | None = None
     azure_openai_auth: Literal["key", "entra"] = "key"
     # "auto" picks max_completion_tokens for reasoning deployments (o-series,
     # gpt-5) and max_tokens for the rest. Override if your resource disagrees.
     azure_openai_token_param: Literal["auto", "max_tokens", "max_completion_tokens"] = "auto"
-    # Send `dimensions` to shorten v3 embedding vectors to EMBEDDING_DIM.
-    azure_openai_send_dimensions: bool = False
 
     chunk_max_tokens: int = 512
     chunk_overlap_ratio: float = 0.2

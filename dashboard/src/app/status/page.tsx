@@ -8,6 +8,7 @@ import {
   Chip,
   EmptyState,
   ErrorState,
+  Inline,
   PageHeader,
   Skeleton,
 } from "@/components/ui";
@@ -49,7 +50,7 @@ function StatusCard({ status }: { status: StatusResult }) {
                     line.startsWith("(") ? "text-ink-muted" : "text-ink-secondary"
                   }`}
                 >
-                  {line}
+                  <Inline text={line} />
                 </p>
               ) : null,
             )}

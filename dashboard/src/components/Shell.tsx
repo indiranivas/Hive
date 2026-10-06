@@ -3,13 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { PresentationLauncher } from "@/components/Presentation";
 import { api } from "@/lib/api";
 import { useApi, useTheme } from "@/lib/hooks";
 
 const NAV = [
+  { href: "/overview", label: "Leadership overview", icon: "overview" },
   { href: "/", label: "Team pulse", icon: "pulse" },
   { href: "/status", label: "Status", icon: "status" },
   { href: "/expertise", label: "Expertise", icon: "expertise" },
+  { href: "/graph", label: "Org map", icon: "graph" },
   { href: "/knowledge", label: "Knowledge", icon: "knowledge" },
   { href: "/knowledge/gaps", label: "Gap analytics", icon: "gaps" },
   { href: "/ask", label: "Ask Hive", icon: "ask" },
@@ -29,6 +32,15 @@ function Icon({ name }: { name: string }) {
     "aria-hidden": true,
   };
   switch (name) {
+    case "overview":
+      return (
+        <svg {...common}>
+          <rect x="2" y="2" width="5" height="5" rx="1" />
+          <rect x="9" y="2" width="5" height="5" rx="1" />
+          <rect x="2" y="9" width="5" height="5" rx="1" />
+          <rect x="9" y="9" width="5" height="5" rx="1" />
+        </svg>
+      );
     case "pulse":
       return (
         <svg {...common}>
@@ -49,6 +61,16 @@ function Icon({ name }: { name: string }) {
           <circle cx="12" cy="7" r="2" />
           <circle cx="5" cy="12" r="2" />
           <path d="M5.8 5.2 10.2 6.3M5.3 10.2 10.8 8.6" />
+        </svg>
+      );
+    case "graph":
+      return (
+        <svg {...common}>
+          <circle cx="8" cy="8" r="5.5" />
+          <circle cx="8" cy="2.5" r="1.4" fill="currentColor" stroke="none" />
+          <circle cx="13" cy="10.5" r="1.4" fill="currentColor" stroke="none" />
+          <circle cx="3" cy="10.5" r="1.4" fill="currentColor" stroke="none" />
+          <path d="M8 2.5 13 10.5M8 2.5 3 10.5M3 10.5h10" />
         </svg>
       );
     case "knowledge":
@@ -218,6 +240,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
         <main className="mx-auto w-full max-w-7xl flex-1 p-4 sm:p-6">{children}</main>
+        <PresentationLauncher />
       </div>
     </div>
   );

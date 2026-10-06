@@ -1,10 +1,13 @@
 import type {
   ActivityWeek,
+  BusFactorTopic,
   ExpertiseMap,
   GapAnalytics,
+  GraphResponse,
   Health,
   IngestionStatus,
   KnowledgeRequest,
+  LeadershipOverview,
   QueryResponse,
   StatusResult,
   TeamPulse,
@@ -71,6 +74,8 @@ const query = (params: Record<string, string | number | boolean | undefined | nu
 export const api = {
   health: () => request<Health>("/health"),
 
+  overview: () => request<LeadershipOverview>("/api/dashboard/overview"),
+
   pulse: (windowDays = 7, teamId?: string) =>
     request<TeamPulse>(`/api/dashboard/pulse${query({ window_days: windowDays, team_id: teamId })}`),
 
@@ -123,6 +128,10 @@ export const api = {
     ),
 
   gapAnalytics: () => request<GapAnalytics>("/api/knowledge-requests/analytics"),
+
+  graph: () => request<GraphResponse>("/api/graph/overview"),
+
+  busFactor: () => request<{ at_risk: BusFactorTopic[] }>("/api/graph/bus-factor"),
 
   ingestionStatus: () => request<IngestionStatus>("/api/admin/ingestion-status"),
 

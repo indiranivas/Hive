@@ -312,3 +312,25 @@ def test_seed_reset_survives_new_tables_referencing_people(db_session, team, per
     reset_data(db_session)  # must not raise a foreign key error
 
     assert db_session.execute(select(Notification)).scalars().all() == []
+
+
+def test_leadership_overview_counts_and_shows_its_assumptions(client, artifact_factory):
+    for index in range(3):
+        artifact_factory(f"Change {index}", "body", metadata={"repo": "solo-repo", "sha": f"s{index}"})
+
+    overview = client.get("/api/dashboard/overview").json()
+    assert overview["trail"]["artifacts"] == 3
+    assert overview["trail"]["repos"] == 1
+    # One person did all of solo-repo: that is concentration risk.
+    [area] = overview["expertise"]["areas"]
+    assert area["repo"] == "solo-repo" and area["top_share"] == 1.0 and area["at_risk"]
+    # The estimate must carry its inputs, and add up from them.
+    rows = overview["time_saved"]["breakdown"]
+    assert all({"count", "minutes_each", "hours"} <= set(row) for row in rows)
+    assert overview["time_saved"]["hours"] == round(sum(row["hours"] for row in rows), 1)
+
+
+def test_leadership_overview_requires_manager(client, db_session, dev_user):
+    dev_user.role = "member"
+    db_session.flush()
+    assert client.get("/api/dashboard/overview").status_code == 403

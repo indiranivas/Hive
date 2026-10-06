@@ -187,3 +187,84 @@ export interface Health {
   vector_provider: string;
   database: string;
 }
+
+// --- knowledge graph -------------------------------------------------------
+
+export type GraphNodeKind =
+  | "org"
+  | "team"
+  | "person"
+  | "repo"
+  | "module"
+  | "topic"
+  | "artifact"
+  | "kr";
+
+export interface GraphNode {
+  id: string;
+  label: string;
+  kind: GraphNodeKind;
+  meta: Record<string, string | number | boolean>;
+}
+
+export interface GraphEdge {
+  source: string;
+  target: string;
+  kind: string;
+  weight: number;
+}
+
+export interface GraphResponse {
+  provider: string;
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+}
+
+export interface BusFactorTopic {
+  topic: string;
+  expert_id: string;
+  expert_name: string;
+  score: number;
+  evidence_count: number;
+}
+
+export interface RepoConcentration {
+  repo: string;
+  contributors: number;
+  artifacts: number;
+  top_person: string;
+  top_share: number;
+  at_risk: boolean;
+}
+
+export interface TimeSavedRow {
+  label: string;
+  count: number;
+  minutes_each: number;
+  hours: number;
+}
+
+export interface LeadershipOverview {
+  generated_at: string;
+  trail: {
+    artifacts: number;
+    people: number;
+    teams: number;
+    repos: number;
+    sources: Record<string, boolean>;
+    first_seen: string | null;
+    last_seen: string | null;
+  };
+  questions: {
+    total: number;
+    last_30d: number;
+    answered_with_evidence: number;
+    answer_rate: number | null;
+    median_latency_ms: number | null;
+    by_surface: Record<string, number>;
+  };
+  knowledge: { answered: number; open: number; median_hours_to_answer: number | null };
+  expertise: { topics_mapped: number; areas: RepoConcentration[]; areas_at_risk: number };
+  status_reports: number;
+  time_saved: { hours: number; breakdown: TimeSavedRow[] };
+}

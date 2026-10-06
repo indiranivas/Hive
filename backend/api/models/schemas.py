@@ -86,4 +86,60 @@ class HealthResponse(BaseModel):
     llm_provider: str
     embedding_provider: str
     vector_provider: str
+    graph_provider: str
     database: str
+
+
+# --- knowledge graph -----------------------------------------------------------
+
+
+class GraphNodeModel(BaseModel):
+    id: str
+    label: str
+    kind: str
+    meta: dict = {}
+
+
+class GraphEdgeModel(BaseModel):
+    source: str
+    target: str
+    kind: str
+    weight: float = 1.0
+
+
+class GraphResponse(BaseModel):
+    provider: str
+    nodes: list[GraphNodeModel]
+    edges: list[GraphEdgeModel]
+
+
+class CollaboratorModel(BaseModel):
+    person_id: str
+    display_name: str
+    email: str
+    shared_topics: list[str]
+    shared_repos: list[str]
+    strength: float
+
+
+class CollaboratorsResponse(BaseModel):
+    person_id: uuid.UUID
+    collaborators: list[CollaboratorModel]
+
+
+class BusFactorTopicModel(BaseModel):
+    topic: str
+    expert_id: str
+    expert_name: str
+    score: float
+    evidence_count: int
+
+
+class BusFactorResponse(BaseModel):
+    at_risk: list[BusFactorTopicModel]
+
+
+class GraphSyncResponse(BaseModel):
+    provider: str
+    nodes: int
+    edges: int

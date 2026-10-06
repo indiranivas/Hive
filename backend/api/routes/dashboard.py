@@ -11,6 +11,7 @@ from api.core.db import get_db
 from api.core.security import require
 from api.models.orm import Person
 from api.services.dashboard_service import activity_breakdown, expertise_map, team_pulse
+from api.services.impact_service import leadership_overview
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
@@ -51,3 +52,12 @@ def get_expertise_map(
     user: Person = Depends(require("can_view_dashboard")),
 ) -> dict:
     return expertise_map(db, _scope(user, team_id), min_score=min_score, limit=limit)
+
+
+@router.get("/overview")
+def get_overview(
+    db: Session = Depends(get_db),
+    _: Person = Depends(require("can_view_gap_analytics")),
+) -> dict:
+    """Org-wide, so it uses the same permission as the org-wide gap analytics."""
+    return leadership_overview(db)

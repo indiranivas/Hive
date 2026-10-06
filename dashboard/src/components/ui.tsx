@@ -245,3 +245,30 @@ export function Avatar({ name, tint, size = 32 }: { name: string; tint: string; 
     </span>
   );
 }
+
+/** LLM answers arrive with light markdown (**bold**, `code`). Render just those
+ *  two marks; anything richer stays as plain text rather than pulling in a parser. */
+export function Inline({ text }: { text: string }) {
+  const parts = text.replace(/\*{3,}/g, "**").split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
+  return (
+    <>
+      {parts.map((part, index) => {
+        if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
+          return (
+            <strong key={index} className="font-semibold text-ink">
+              {part.slice(2, -2)}
+            </strong>
+          );
+        }
+        if (part.startsWith("`") && part.endsWith("`") && part.length > 2) {
+          return (
+            <code key={index} className="font-mono text-[0.9em] text-ink">
+              {part.slice(1, -1)}
+            </code>
+          );
+        }
+        return part;
+      })}
+    </>
+  );
+}
